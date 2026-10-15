@@ -3,8 +3,10 @@
 An org is a plain dict, the same shape whether it comes from the sample seed or from
 the Kubernetes loader:
 
-    teams:        ["payments", ...]
+    teams:        ["payments", ...] or [{"name": ..., "kind": "approvers"}, ...]
     systems:      [{"name": "billing", "teams": ["payments"]}, ...]   teams = DEPENDS_ON
+                  optional: "sigs" (owning SIGs), "emeritus_approvers" (a count),
+                  "inactive_owners" (OWNERS file whose approvers have all gone quiet)
     people:       [{"handle": "ana", "teams": ["growth"]}, ...]       teams = MEMBER_OF
     knows:        [{"person": "ana", "system": "billing", "score": 1.0}, ...]
     collaborates: [["ana", "dev"], ...]                               undirected pairs
@@ -67,10 +69,16 @@ def _batched(g: Graph, query: str, rows: list) -> None:
 def write_org(g: Graph, org: dict) -> None:
     for q in INDEXES:
         g.query(q)
-    _batched(g, "UNWIND $rows AS name CREATE (:Team {name: name})", org["teams"])
+    _batched(
+        g,
+        "UNWIND $rows AS t CREATE (x:Team {name: t.name}) SET x.kind = t.kind",
+        [t if isinstance(t, dict) else {"name": t} for t in org["teams"]],
+    )
     _batched(
         g,
         """UNWIND $rows AS s CREATE (sys:System {name: s.name})
+           SET sys.sigs = s.sigs, sys.emeritus_approvers = s.emeritus_approvers,
+               sys.inactive_owners = s.inactive_owners
            WITH sys, s UNWIND s.teams AS tn
            MATCH (t:Team {name: tn}) CREATE (t)-[:DEPENDS_ON]->(sys)""",
         org["systems"],

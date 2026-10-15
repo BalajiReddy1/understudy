@@ -3,20 +3,24 @@
     systems       OWNERS directories 1 to 3 levels under pkg/, cmd/, plugin/ and
                   staging/src/k8s.io/. A directory with too few PRs folds into the
                   nearest OWNERS directory above it.
-    teams         SIGs. A system's owners come from `labels: sig/...` in its OWNERS
-                  file, else the nearest OWNERS above it, else the commonest sig label
-                  on PRs that touch it.
+    teams         The approvers of each system, read from its nearest OWNERS file the
+                  way Kubernetes' approval bot does: aliases expanded and the catch-all
+                  `.*` filter included. If everyone a file lists has gone quiet,
+                  approval falls to the next file up (as it does in practice) and the
+                  system records which file was abandoned. Systems sharing an OWNERS
+                  file share a team.
+    MEMBER_OF     approvers with at least 3 PRs in the knows window. Anyone else
+                  listed has effectively left already.
     KNOWS         PRs touching the system in the 18 months before the as-of date:
                   author 1.0, reviewer or commenter 0.5, halving every 6 months.
     COLLABORATES  one reviewed or commented on the other's PRs at least twice in 12 months.
-    MEMBER_OF     the SIG's roster in OWNERS_ALIASES as of that date (sig-node-approvers,
-                  sig-node-reviewers, ...), for people active in the knows window. A SIG
-                  with no roster falls back to anyone with 3+ sig/X PRs in 12 months.
 
-Membership was activity-based at first, but then nearly every knower was already on
-the team and the understudy number just repeated the knower count. With the official
-roster, the question becomes the one the product asks: how many people can leave
-before none of the SIG's maintainers can reach someone who knows the code.
+The SIG that owns each system is kept as context (System.sigs), not as the team. Two
+earlier versions used SIGs as teams. With membership by activity, nearly every knower
+was on the team and the understudy number repeated the knower count. With the SIG
+rosters in OWNERS_ALIASES, most systems scored the roster size. The approvers of the
+code are the people who actually have to be reached, so the question becomes: how
+many people can leave before no approver can reach anyone who knows this code?
 """
 
 import json
@@ -40,7 +44,9 @@ HALF_LIFE_DAYS = 182.6
 AUTHOR, REVIEWER = 1.0, 0.5
 MIN_KNOWS = 1.0
 MIN_COLLAB = 2
-MIN_MEMBER = 3
+# An approver with fewer PRs than this in the knows window is treated as gone. One
+# drive-by comment in 18 months is not someone a team can rely on.
+MIN_ACTIVE_PRS = 3
 # PRs touching more systems than this are sweeps (renames, dependency bumps, lint
 # fixes). They say little about who understands any one of them.
 MAX_SYSTEMS_PER_PR = 8
@@ -50,8 +56,20 @@ def _time(s: str) -> datetime:
     return datetime.fromisoformat(s)
 
 
+def end_of(day: date) -> datetime:
+    return datetime(day.year, day.month, day.day, 23, 59, 59, tzinfo=UTC)
+
+
 def _dir(path: str) -> str:
     return path.rsplit("/", 1)[0] if "/" in path else ""
+
+
+def _parse(text: str) -> dict:
+    try:
+        parsed = yaml.safe_load(text)
+    except yaml.YAMLError:
+        return {}
+    return parsed if isinstance(parsed, dict) else {}
 
 
 def load_prs(raw: Path) -> list[dict]:
@@ -63,18 +81,27 @@ def load_prs(raw: Path) -> list[dict]:
     return list(by_number.values())
 
 
-def load_owners(raw: Path) -> dict[str, dict]:
-    """Latest parsed OWNERS file for each directory ('' is the repo root)."""
+def load_owners(raw: Path, as_of: date | None = None) -> dict[str, dict]:
+    """Each OWNERS file as it stood at the end of `as_of` (default: latest), keyed by
+    directory ('' is the repo root). Files deleted by then, or not yet created, are
+    left out. Only files that still exist today were fetched, so a directory removed
+    before today is missing from older dates too."""
     history = json.loads((raw / "owners" / "history.json").read_text())
-    latest = {(p, c[0]["oid"]) for p, c in history.items() if c and p.endswith("OWNERS")}
+    until = end_of(as_of) if as_of else None
+    wanted = set()
+    for path, commits in history.items():
+        if path.rsplit("/", 1)[-1] != "OWNERS":
+            continue
+        for c in commits:  # newest first
+            if until is None or _time(c["date"]) <= until:
+                wanted.add((path, c["oid"]))
+                break
     out = {}
     for line in (raw / "owners" / "blobs.jsonl").open(encoding="utf-8"):
         r = json.loads(line)
-        if (r["path"], r["oid"]) in latest and r["text"]:
-            try:
-                out[_dir(r["path"])] = yaml.safe_load(r["text"]) or {}
-            except yaml.YAMLError:
-                out[_dir(r["path"])] = {}
+        # text is None when that commit deleted the file.
+        if (r["path"], r["oid"]) in wanted and r["text"] is not None:
+            out[_dir(r["path"])] = _parse(r["text"])
     return out
 
 
@@ -86,28 +113,93 @@ def load_aliases(raw: Path) -> list[tuple[datetime, dict[str, list[str]]]]:
     for line in (raw / "owners" / "blobs.jsonl").open(encoding="utf-8"):
         r = json.loads(line)
         if r["path"] == "OWNERS_ALIASES" and r["text"] and r["oid"] in when:
-            aliases = (yaml.safe_load(r["text"]) or {}).get("aliases") or {}
-            versions.append((when[r["oid"]], aliases))
+            versions.append((when[r["oid"]], _parse(r["text"]).get("aliases") or {}))
     return sorted(versions, key=lambda v: v[0])
 
 
-def rosters(aliases: dict[str, list[str]], sigs: set[str]) -> dict[str, set[str]]:
-    """SIG -> lowercased handles on any alias named after it (sig-auth-audit-approvers
-    belongs to sig-auth). The longest matching SIG name wins."""
-    out: dict[str, set[str]] = defaultdict(set)
-    for name, handles in aliases.items():
-        owner = max(
-            (s for s in sigs if name == s or name.startswith(s + "-")), key=len, default=None
-        )
-        if owner:
-            out[owner] |= {h.lower() for h in handles or []}
-    return out
+def aliases_at(versions: list[tuple[datetime, dict]], until: datetime) -> dict[str, list[str]]:
+    current = [a for when, a in versions if when <= until]
+    return current[-1] if current else {}
+
+
+def team_name(owner_dir: str) -> str:
+    """A team is named after the OWNERS file its approvers come from."""
+    return f"{owner_dir}/OWNERS" if owner_dir else "OWNERS"
 
 
 def _sig_labels(labels) -> list[str]:
     return sorted(
         {lab.replace("sig/", "sig-", 1) for lab in labels or [] if lab.startswith("sig/")}
     )
+
+
+class OwnersTree:
+    """Reads approvers and SIG labels for a directory from a set of OWNERS files."""
+
+    def __init__(self, files: dict[str, dict], aliases: dict[str, list[str]]):
+        self.files = files
+        self.aliases = aliases
+
+    def _level(self, d: str) -> tuple[list[str], list[str], list[str], bool]:
+        """(approvers, labels, emeritus approvers, no_parent_owners) of one file. Rules
+        under `filters` apply to matching file names; only the catch-all `.*` rule
+        covers the whole directory, so it is the only one read here."""
+        o = self.files.get(d) or {}
+        catch_all = (o.get("filters") or {}).get(".*") or {}
+        return (
+            list(o.get("approvers") or []) + list(catch_all.get("approvers") or []),
+            list(o.get("labels") or []) + list(catch_all.get("labels") or []),
+            list(o.get("emeritus_approvers") or [])
+            + list(catch_all.get("emeritus_approvers") or []),
+            bool((o.get("options") or {}).get("no_parent_owners")),
+        )
+
+    def _up(self, d: str):
+        """d and each directory above it that has an OWNERS file, nearest first."""
+        while True:
+            if d in self.files:
+                yield d
+            if not d:
+                return
+            d = _dir(d)
+
+    def resolve(self, names: list[str]) -> set[str]:
+        out = set()
+        for n in names:
+            if n in self.aliases:
+                out |= {h.lower() for h in self.aliases[n] or []}
+            else:
+                out.add(n.lower())
+        return out
+
+    def approvers(self, d: str, active: set[str]) -> tuple[str | None, set[str], str | None]:
+        """Who can approve changes to d today, as (directory of the OWNERS file they
+        come from, their active lowercased handles, directory of the nearest OWNERS
+        file whose listed approvers are all inactive, if approval had to move past it).
+
+        Approvers in any parent file can approve too, unless a file sets
+        no_parent_owners. So when everyone a file lists has gone quiet, approval falls
+        to the next file up that still has someone active."""
+        abandoned = None
+        for x in self._up(d):
+            listed, _, _, no_parent = self._level(x)
+            here = self.resolve(listed) & active
+            if here or no_parent:
+                return x, here, abandoned
+            if listed and abandoned is None:
+                abandoned = x
+        return None, set(), abandoned
+
+    def sigs(self, d: str) -> list[str]:
+        for x in self._up(d):
+            labels = _sig_labels(self._level(x)[1])
+            if labels:
+                return labels
+        return []
+
+    def emeritus(self, d: str) -> int:
+        """Former approvers recorded in this directory's own OWNERS file."""
+        return len(self.resolve(self._level(d)[2])) if d in self.files else 0
 
 
 def _participants(pr: dict) -> dict[str, float]:
@@ -178,28 +270,28 @@ def derive_org(
     as_of: date,
     salt: str,
 ) -> tuple[dict, dict[str, str]]:
-    """Returns the org and the login -> pseudonym map. The map is for matching
-    departures later; it must never be written anywhere public."""
-    until = datetime(as_of.year, as_of.month, as_of.day, 23, 59, 59, tzinfo=UTC)
+    """Returns the org and the login -> pseudonym map. Pass OWNERS files loaded for
+    the same as-of date. The map is for matching departures later; it must never be
+    written anywhere public."""
+    until = end_of(as_of)
     knows_since, recent_since = until - KNOWS_WINDOW, until - RECENT_WINDOW
     smap = SystemMap(owners, prs, knows_since, until)
+    tree = OwnersTree(owners, aliases_at(aliases, until))
 
     knows: dict[tuple[str, str], float] = defaultdict(float)
     collab: Counter = Counter()
-    member: Counter = Counter()
     pr_sigs: dict[str, Counter] = defaultdict(Counter)
-    active: set[str] = set()
+    activity: Counter = Counter()
 
     for pr in prs:
         merged = _time(pr["merged_at"])
         if not knows_since < merged <= until:
             continue
         people = _participants(pr)
-        active |= people.keys()
+        activity.update(people.keys())
         systems = {s for f in pr["files"] if (s := smap.system_of(f))}
-        sigs = _sig_labels(pr["labels"])
         for s in systems:
-            pr_sigs[s].update(sigs)
+            pr_sigs[s].update(_sig_labels(pr["labels"]))
         if len(systems) <= MAX_SYSTEMS_PER_PR:
             decay = 0.5 ** ((until - merged).days / HALF_LIFE_DAYS)
             for person, weight in people.items():
@@ -211,34 +303,32 @@ def derive_org(
                 for other in people:
                     if other != author:
                         collab[tuple(sorted((author, other)))] += 1
-            for person in people:
-                for sig in sigs:
-                    member[(person, sig)] += 1
 
-    systems = []
+    active = {p for p, n in activity.items() if n >= MIN_ACTIVE_PRS}
+    systems, approvers_of = [], {}
     for s in smap.systems:
-        teams = None
-        d = s
-        while teams is None and d is not None:
-            if d in owners:
-                teams = _sig_labels(owners[d].get("labels")) or None
-            d = _dir(d) if d else None
-        if teams is None and pr_sigs[s]:
-            teams = [pr_sigs[s].most_common(1)[0][0]]
-        if teams:
-            systems.append({"name": s, "teams": teams})
+        owner_dir, approvers, abandoned = tree.approvers(s, active)
+        if owner_dir is None:
+            continue
+        team = team_name(owner_dir)
+        approvers_of[team] = approvers
+        systems.append(
+            {
+                "name": s,
+                "teams": [team],
+                "sigs": tree.sigs(s) or [sig for sig, _ in pr_sigs[s].most_common(1)],
+                "emeritus_approvers": tree.emeritus(s),
+                # The OWNERS file whose approvers have all gone quiet, if approval
+                # had to move up past it.
+                "inactive_owners": abandoned and team_name(abandoned),
+            }
+        )
     system_names = {s["name"] for s in systems}
 
     knows_rows = [
         (p, s, round(v, 3)) for (p, s), v in knows.items() if v >= MIN_KNOWS and s in system_names
     ]
-    sigs_seen = {t for s in systems for t in s["teams"]} | {sig for _, sig in member}
-    current = [a for when, a in aliases if when <= until]
-    roster = rosters(current[-1] if current else {}, sigs_seen)
-    member_rows = [(p, sig) for sig, handles in roster.items() for p in handles & active]
-    member_rows += [
-        (p, sig) for (p, sig), n in member.items() if n >= MIN_MEMBER and sig not in roster
-    ]
+    member_rows = [(p, t) for t, handles in approvers_of.items() for p in handles]
     collab_rows = [pair for pair, n in collab.items() if n >= MIN_COLLAB]
 
     involved = {p for p, _, _ in knows_rows} | {p for p, _ in member_rows}
@@ -248,12 +338,11 @@ def derive_org(
 
     names = pseudonyms(all_logins(prs), salt)
     teams_of = defaultdict(list)
-    for p, sig in member_rows:
-        teams_of[p].append(sig)
-    all_teams = sorted({t for s in systems for t in s["teams"]} | {sig for _, sig in member_rows})
+    for p, t in member_rows:
+        teams_of[p].append(t)
 
     org = {
-        "teams": all_teams,
+        "teams": [{"name": t, "kind": "approvers"} for t in sorted(approvers_of)],
         "systems": systems,
         "people": [{"handle": names[p], "teams": sorted(teams_of[p])} for p in sorted(involved)],
         "knows": [{"person": names[p], "system": s, "score": v} for p, s, v in knows_rows],

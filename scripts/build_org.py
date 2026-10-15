@@ -6,6 +6,7 @@ uv run python scripts/build_org.py --as-of 2025-06-30 --graph org@2025-06
 
 import argparse
 import time
+from collections import Counter
 from datetime import date
 
 from understudy.config import RAW, salt
@@ -22,13 +23,13 @@ def main() -> None:
     args = ap.parse_args()
 
     t0 = time.perf_counter()
-    prs, owners, aliases = load_prs(RAW), load_owners(RAW), load_aliases(RAW)
+    prs, owners, aliases = load_prs(RAW), load_owners(RAW, args.as_of), load_aliases(RAW)
     org, _ = derive_org(prs, owners, aliases, args.as_of, salt())
     t1 = time.perf_counter()
     print(
         f"derived from {len(prs)} PRs in {t1 - t0:.1f}s: {len(org['systems'])} systems, "
-        f"{len(org['teams'])} SIGs, {len(org['people'])} people, {len(org['knows'])} KNOWS, "
-        f"{len(org['collaborates'])} COLLABORATES pairs"
+        f"{len(org['teams'])} approver teams, {len(org['people'])} people, "
+        f"{len(org['knows'])} KNOWS, {len(org['collaborates'])} COLLABORATES pairs"
     )
 
     db = connect()
@@ -59,24 +60,43 @@ def main() -> None:
            MERGE (p)-[:CARRIES]->(s)""",
         {"rows": carries},
     )
+    report(g)
 
+
+def report(g) -> None:
     rows = g.ro_query(
         """MATCH (s:System)<-[:DEPENDS_ON]-(t:Team)
-           OPTIONAL MATCH (s)<-[k:KNOWS]-(:Person)
-           WITH s, collect(DISTINCT t.name) AS sigs, count(DISTINCT k) AS knowers
-           RETURN s.name, sigs, knowers, s.understudy
-           ORDER BY s.understudy, knowers DESC"""
+           OPTIONAL MATCH (t)<-[:MEMBER_OF]-(a:Person)
+           WITH s, t, count(DISTINCT a) AS approvers
+           OPTIONAL MATCH (s)<-[:KNOWS]-(k:Person)
+           RETURN s.name, t.name, s.sigs, approvers, count(DISTINCT k) AS knowers,
+                  s.understudy, s.emeritus_approvers, s.inactive_owners"""
     ).result_set
-    dist = {}
-    for _, _, _, u in rows:
-        dist[u] = dist.get(u, 0) + 1
-    print("understudy number -> systems:", dict(sorted(dist.items())))
-    # The interesting systems are the ones a headcount says are safe: several people
-    # know them, yet the understudy number is low.
-    exposed = sorted((r for r in rows if r[2] >= 3), key=lambda r: (r[3] / r[2], r[3]))
-    print("\nmost exposed (understudy / knowers, at least 3 knowers):")
-    for name, sigs, knowers, u in exposed[:15]:
-        print(f"  {u:>2} of {knowers:>3} knowers  {name}  ({', '.join(sigs)})")
+
+    print("\nunderstudy number -> systems:", dict(sorted(Counter(r[5] for r in rows).items())))
+    below_approvers = [r for r in rows if r[5] < r[3]]
+    print(
+        f"{len(below_approvers)} of {len(rows)} systems score below their active approver "
+        "count, so the bottleneck is how knowledge reaches the approvers, not headcount"
+    )
+    print(f"{sum(r[3] == 0 for r in rows)} systems have no active approver at all")
+    abandoned = [r for r in rows if r[7]]
+    print(
+        f"{len(abandoned)} systems had to fall back past an OWNERS file nobody listed is active in:"
+    )
+    for r in abandoned:
+        print(f"    {r[0]}: {r[7]} -> {r[1]}")
+
+    # The interesting systems are the ones a headcount calls safe: several people know
+    # them, yet few independent routes reach the approvers.
+    exposed = sorted((r for r in rows if r[4] >= 3), key=lambda r: (r[5], -r[4]))
+    print("\nmost exposed (understudy, knowers, active approvers):")
+    for name, team, sigs, approvers, knowers, u, emeritus, _ in exposed[:20]:
+        note = f", {emeritus} emeritus in its own OWNERS" if emeritus else ""
+        print(
+            f"  {u:>2} | {knowers:>3} know | {approvers:>2} approve  {name}"
+            f"  [{team}; {', '.join(sigs or [])}{note}]"
+        )
 
 
 if __name__ == "__main__":
