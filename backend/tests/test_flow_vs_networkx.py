@@ -4,8 +4,8 @@ mixed-capacity bug before the event, so it stays."""
 
 import random
 
-import networkx as nx
 import pytest
+from nxflow import nx_number
 
 from understudy.db import drop
 from understudy.derive.flow import build_flow_layer, write_org
@@ -35,6 +35,12 @@ def random_org(rng: random.Random) -> dict:
     pairs = {
         tuple(rng.sample(handles, 2)) for _ in range(rng.randint(len(handles), 3 * len(handles)))
     }
+    # Half the orgs use the Kubernetes shape (team dicts, extra system properties), so
+    # both ways write_org can be called go through the comparison.
+    if rng.random() < 0.5:
+        teams = [{"name": t, "kind": "approvers"} for t in teams]
+        for s in systems:
+            s |= {"sigs": ["sig-x"], "emeritus_approvers": 1, "inactive_owners": None}
     return {
         "teams": teams,
         "systems": systems,
@@ -42,32 +48,6 @@ def random_org(rng: random.Random) -> dict:
         "knows": knows,
         "collaborates": [list(p) for p in pairs],
     }
-
-
-def nx_number(
-    org: dict, system: str, without: set[str] = frozenset(), min_score: float = 0.0
-) -> int:
-    active = {p["handle"] for p in org["people"] if not p.get("left_at")} - set(without)
-    G = nx.DiGraph()
-    for h in active:
-        G.add_edge(("in", h), ("out", h), capacity=1)
-    for k in org["knows"]:
-        if k["system"] == system and k["person"] in active and k["score"] >= min_score:
-            G.add_edge(("sys", system), ("in", k["person"]), capacity=1)
-    for a, b in org["collaborates"]:
-        if a in active and b in active and a != b:
-            G.add_edge(("out", a), ("in", b), capacity=1)
-            G.add_edge(("out", b), ("in", a), capacity=1)
-    for p in org["people"]:
-        if p["handle"] in active:
-            for t in p["teams"]:
-                G.add_edge(("out", p["handle"]), ("team", t), capacity=1)
-    deps = next(s["teams"] for s in org["systems"] if s["name"] == system)
-    for t in deps:
-        G.add_edge(("team", t), "SINK")  # no capacity attribute means unbounded
-    G.add_node(("sys", system))
-    G.add_node("SINK")
-    return int(nx.maximum_flow_value(G, ("sys", system), "SINK"))
 
 
 @pytest.mark.parametrize("seed", range(40))
