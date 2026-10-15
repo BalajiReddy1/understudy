@@ -81,15 +81,20 @@ def load_prs(raw: Path) -> list[dict]:
     return list(by_number.values())
 
 
+def load_versions(raw: Path) -> dict[str, list[dict]]:
+    """path -> [{oid, date}] newest first: each OWNERS file as it landed on the main
+    branch, dated by merge time (see ingest/owners.py for why not branch commits)."""
+    return json.loads((raw / "owners" / "mainline.json").read_text())
+
+
 def load_owners(raw: Path, as_of: date | None = None) -> dict[str, dict]:
     """Each OWNERS file as it stood at the end of `as_of` (default: latest), keyed by
     directory ('' is the repo root). Files deleted by then, or not yet created, are
     left out. Only files that still exist today were fetched, so a directory removed
     before today is missing from older dates too."""
-    history = json.loads((raw / "owners" / "history.json").read_text())
     until = end_of(as_of) if as_of else None
     wanted = set()
-    for path, commits in history.items():
+    for path, commits in load_versions(raw).items():
         if path.rsplit("/", 1)[-1] != "OWNERS":
             continue
         for c in commits:  # newest first
@@ -106,9 +111,8 @@ def load_owners(raw: Path, as_of: date | None = None) -> dict[str, dict]:
 
 
 def load_aliases(raw: Path) -> list[tuple[datetime, dict[str, list[str]]]]:
-    """Every version of OWNERS_ALIASES as (commit time, aliases), oldest first."""
-    history = json.loads((raw / "owners" / "history.json").read_text())
-    when = {c["oid"]: _time(c["date"]) for c in history.get("OWNERS_ALIASES", [])}
+    """Every version of OWNERS_ALIASES as (merge time, aliases), oldest first."""
+    when = {c["oid"]: _time(c["date"]) for c in load_versions(raw).get("OWNERS_ALIASES", [])}
     versions = []
     for line in (raw / "owners" / "blobs.jsonl").open(encoding="utf-8"):
         r = json.loads(line)

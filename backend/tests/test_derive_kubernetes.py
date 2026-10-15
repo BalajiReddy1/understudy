@@ -128,7 +128,7 @@ def raw(tmp_path):
         ("OWNERS_ALIASES", "a2", "aliases: {x: [new]}"),
     ]
     (tmp_path / "owners").mkdir()
-    (tmp_path / "owners" / "history.json").write_text(json.dumps(history))
+    (tmp_path / "owners" / "mainline.json").write_text(json.dumps(history))
     (tmp_path / "owners" / "blobs.jsonl").write_text(
         "".join(json.dumps({"path": p, "oid": o, "text": t}) + "\n" for p, o, t in blobs)
     )

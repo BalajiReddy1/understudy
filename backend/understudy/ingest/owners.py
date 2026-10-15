@@ -1,9 +1,14 @@
 """Fetch the history of every OWNERS file (and OWNERS_ALIASES) in a repository.
 
 Departures are people moved into emeritus_approvers. Rather than parsing commit
-patches, this saves the full file text at every commit that touched it, so the
-loader can diff the parsed YAML of consecutive versions. Both steps go through
-GraphQL with many aliases per request, which costs a few hundred points in total.
+patches, this saves the full file text as it stood on the main branch after every
+change, so the loader can diff the parsed YAML of consecutive versions. Everything
+goes through GraphQL with many aliases per request, a few hundred points in total.
+
+    history.json   commits touching each file (PR branch commits, branch dates)
+    landed.json    commit -> the merge commit that brought it into the main branch
+    mainline.json  each file's versions on the main branch, newest first, by merge time
+    blobs.jsonl    file text for every (path, oid) above
 """
 
 import json
@@ -106,6 +111,60 @@ def fetch_blobs(gh: GitHub, repo: str, wanted: list[tuple[str, str]], out: Path)
                 log(f"  blobs: {min(start + 40, len(todo))}/{len(todo)}")
 
 
+def mainline_versions(
+    history: dict[str, list[dict]], landed: dict[str, tuple[str, str] | None]
+) -> dict[str, list[dict]]:
+    """Each file's versions as they landed on the main branch, newest first.
+
+    history(path) lists the commits on PR branches, with branch commit dates. Two PRs
+    editing the same file at once each start from an older base, so diffing those
+    versions in date order makes one PR look like it reverts the other. Mapping every
+    commit to the merge commit that brought it in, and reading the file there, gives
+    the file exactly as the main branch had it, in the order the changes arrived.
+    `landed` maps commit oid -> (merge commit oid, merged at), or None if no merged PR
+    contains it; such a commit was pushed directly and counts as landing when made."""
+    out = {}
+    for path, commits in history.items():
+        versions = {}
+        for c in commits:
+            oid, when = landed.get(c["oid"]) or (c["oid"], c["date"])
+            versions[oid] = min(when, versions.get(oid, when))
+        out[path] = [
+            {"oid": oid, "date": when}
+            for oid, when in sorted(versions.items(), key=lambda v: v[1], reverse=True)
+        ]
+    return out
+
+
+def fetch_landed(gh: GitHub, repo: str, branch: str, oids: list[str], out: Path) -> dict:
+    """commit oid -> (merge commit oid, merged at) of the PR that brought it into
+    `branch`, cached in `out`. Cherry-pick PRs into release branches are ignored."""
+    owner, name = repo.split("/")
+    landed = json.loads(out.read_text()) if out.exists() else {}
+    todo = [o for o in oids if o not in landed]
+    log(f"  landing points: {len(todo)} commits to look up, {len(landed)} cached")
+    for start in range(0, len(todo), 40):
+        batch = todo[start : start + 40]
+        parts = [
+            f'c{i}: object(oid: "{oid}") {{ ... on Commit {{ associatedPullRequests(first: 10) '
+            "{ nodes { baseRefName mergedAt mergeCommit { oid } } } } }"
+            for i, oid in enumerate(batch)
+        ]
+        q = f'query {{ repository(owner: "{owner}", name: "{name}") {{ {" ".join(parts)} }} }}'
+        data = gh.graphql(q)["repository"]
+        for i, oid in enumerate(batch):
+            prs = [
+                (p["mergeCommit"]["oid"], p["mergedAt"])
+                for p in ((data.get(f"c{i}") or {}).get("associatedPullRequests") or {}).get(
+                    "nodes", []
+                )
+                if p["baseRefName"] == branch and p["mergedAt"] and p["mergeCommit"]
+            ]
+            landed[oid] = min(prs, key=lambda p: p[1]) if prs else None
+        out.write_text(json.dumps(landed))
+    return landed
+
+
 def fetch_owners(
     gh: GitHub, repo: str, cutoff: str, out_dir: Path, limit: int | None = None
 ) -> None:
@@ -128,8 +187,19 @@ def fetch_owners(
     else:
         history = fetch_history(gh, repo, branch, paths, cutoff)
         hist_path.write_text(json.dumps(history))
-    wanted = [(p, c["oid"]) for p, commits in history.items() for c in commits]
-    log(f"OWNERS: {len(wanted)} file versions since {cutoff[:10]} (plus one baseline each)")
+    log(
+        f"OWNERS: {sum(map(len, history.values()))} commits since {cutoff[:10]} "
+        "(plus one baseline each)"
+    )
+
+    oids = sorted({c["oid"] for commits in history.values() for c in commits})
+    landed = fetch_landed(gh, repo, branch, oids, out_dir / "landed.json")
+    mainline = mainline_versions(history, {o: landed[o] and tuple(landed[o]) for o in oids})
+    (out_dir / ("mainline.json" if not limit else "mainline.sample.json")).write_text(
+        json.dumps(mainline)
+    )
+    wanted = [(p, v["oid"]) for p, versions in mainline.items() for v in versions]
+    log(f"OWNERS: {len(wanted)} versions as they landed on {branch}")
 
     fetch_blobs(gh, repo, wanted, out_dir / "blobs.jsonl")
     log("OWNERS done")
