@@ -1,0 +1,35 @@
+[project]
+name = "understudy"
+version = "0.1.0"
+description = "Measures how many people a team can lose before nobody can help with a system, using max-flow on a FalkorDB graph."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "falkordb>=1.0",
+    "httpx>=0.27",
+    "pyyaml>=6.0",
+]
+
+[dependency-groups]
+dev = [
+    "networkx>=3.3",
+    "pytest>=8.0",
+    "ruff>=0.6",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["backend/understudy"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint.isort]
+known-first-party = ["understudy"]
+
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]

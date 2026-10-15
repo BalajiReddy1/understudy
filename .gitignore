@@ -1,0 +1,11 @@
+.env
+data/raw/
+data/smoke/
+node_modules/
+dist/
+.fonts/
+__pycache__/
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.log
