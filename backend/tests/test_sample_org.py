@@ -27,9 +27,12 @@ def test_flow_layer_edge_counts(db):
 
 def test_billing_runs_through_dev(db):
     g = load(db)
-    number, carriers = flow(g, "billing")
-    assert number == 1
-    assert "dev" in carriers and len(carriers) == 2
+    f = flow(g, "billing")
+    assert f.number == 1
+    # One route: a knower (ana, ben or cara) hands it to dev, the only payments member.
+    assert len(f.routes) == 1
+    assert f.routes[0][0] in {"ana", "ben", "cara"} and f.routes[0][1:] == ["dev"]
+    assert "dev" in f.carriers and len(f.carriers) == 2
 
 
 def test_rehearsal_on_a_copy_leaves_the_original_alone(db):

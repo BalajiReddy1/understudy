@@ -5,7 +5,7 @@ import random
 from datetime import date
 
 import pytest
-from nxflow import nx_number
+from nxflow import assert_valid_routes, nx_number
 
 from understudy.config import RAW
 from understudy.db import drop
@@ -71,20 +71,20 @@ def test_every_system_matches_networkx(graph, org):
     rng = random.Random(7)
     handles = [p["handle"] for p in org["people"]]
     for s in all_systems(graph):
-        number, carriers = flow(graph, s)
-        assert number == nx_number(org, s), s
-        assert len(carriers) >= number
+        f = flow(graph, s)
+        assert f.number == nx_number(org, s), s
+        assert len(f.routes) == f.number
+        assert_valid_routes(org, s, f.routes)
         # Losing someone who carries none of the routes can't change the number.
         for h in rng.sample(handles, 3):
-            if h not in carriers:
-                assert nx_number(org, s, {h}) == number, (s, h)
+            if h not in f.carriers:
+                assert nx_number(org, s, {h}) == f.number, (s, h)
 
 
 def test_rehearsal_on_a_copy(db, graph, org):
     target = next(s for s in all_systems(graph) if understudy(graph, s) >= 2)
     before = understudy(graph, target)
-    _, carriers = flow(graph, target)
-    leaving = carriers[0]
+    leaving = flow(graph, target).carriers[0]
 
     drop(db, "test:real-fork")
     fork = graph.copy("test:real-fork")

@@ -13,7 +13,7 @@ from understudy.config import RAW, salt
 from understudy.db import connect, drop
 from understudy.derive.flow import build_flow_layer, write_org
 from understudy.derive.kubernetes import derive_org, load_aliases, load_owners, load_prs
-from understudy.engine.understudy import all_systems, flow
+from understudy.engine.understudy import refresh
 
 
 def main() -> None:
@@ -40,26 +40,9 @@ def main() -> None:
     t2 = time.perf_counter()
     print(f"wrote {args.graph} and its flow layer in {t2 - t1:.1f}s")
 
-    results, carries = [], []
-    for s in all_systems(g):
-        r = flow(g, s)
-        if r is None:
-            continue
-        number, carriers = r
-        results.append({"name": s, "understudy": number})
-        carries += [{"person": p, "system": s} for p in carriers]
+    results = refresh(db, args.graph)
     t3 = time.perf_counter()
-    print(f"max-flow on {len(results)} systems in {t3 - t2:.1f}s")
-
-    g.query(
-        "UNWIND $rows AS r MATCH (s:System {name: r.name}) SET s.understudy = r.understudy",
-        {"rows": results},
-    )
-    g.query(
-        """UNWIND $rows AS r MATCH (p:Person {handle: r.person}), (s:System {name: r.system})
-           MERGE (p)-[:CARRIES]->(s)""",
-        {"rows": carries},
-    )
+    print(f"max-flow and CARRIES for {len(results)} systems in {t3 - t2:.1f}s")
     report(g)
 
 
