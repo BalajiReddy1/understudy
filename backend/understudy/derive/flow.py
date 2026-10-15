@@ -11,11 +11,25 @@ the Kubernetes loader:
     knows:        [{"person": "ana", "system": "billing", "score": 1.0}, ...]
     collaborates: [["ana", "dev"], ...]                               undirected pairs
 
-Flow layer rules, from testing the engine before the event:
-  1. Every KNOWLEDGE edge has cap = 1. algo.maxFlow under-counts with mixed capacities,
+The flow layer. A route from a system to a team that depends on it is either one
+person (an approver who knows the system) or two (someone who knows it, then an
+approver they work with directly). Each person is a gate of capacity 1, so max-flow
+counts routes that share nobody, and by Menger's theorem that is how many people can
+leave before no approver has a line to anyone who knows the code.
+
+Longer chains are deliberately impossible. With channels along every collaboration,
+routes on the real data wandered through 10+ people (126 of 321), central reviewers
+"carried" most systems, and the stage was undrawable. Here a channel only runs from a
+knower to an approver who doesn't know the system (one who does routes directly), and
+an approver's out-port leads only to the team, so no route can pass through anyone.
+Any longer chain could be cut down to its last knower anyway, so no number is lost.
+
+Each system gets its own relationship type (FLOW_<n>, stored as System.flow), since
+the channels depend on who knows which system. Rules from testing the engine:
+  1. Every flow edge has cap = 1. algo.maxFlow under-counts with mixed capacities,
      and with each person a gate of capacity 1 the answer is the same anyway.
-  2. One relationship type (KNOWLEDGE, told apart by `kind`), built with MERGE, because
-     maxFlow takes a single type and rejects duplicate edges.
+  2. maxFlow takes a single relationship type and rejects duplicate edges, so each
+     system's edges share one type (told apart by `kind`) and are built with MERGE.
   3. Outer values go through WITH before an inline property map. On 6.0.2,
      MATCH (x:Port {person: a.handle}) silently matches nothing.
 """
@@ -31,33 +45,36 @@ INDEXES = [
     "CREATE INDEX FOR (p:Port) ON (p.person)",
 ]
 
+# {T} is the system's own relationship type. Type names can't be query parameters, so
+# they're formatted in; they are always FLOW_<n> generated below, never user input.
 FLOW_LAYER = [
-    # A gate per active person: in-port -> out-port, capacity 1.
-    """MATCH (p:Person) WHERE p.left_at IS NULL
-       WITH p.handle AS h
+    # Everyone active who knows the system: a gate, and system -> their in-port.
+    """MATCH (s:System {name: $system})<-[k:KNOWS]-(p:Person)
+       WHERE p.left_at IS NULL AND k.score >= $min_score
+       WITH s, p.handle AS h
        MERGE (i:Port {person: h, side: 'in'})
        MERGE (o:Port {person: h, side: 'out'})
-       MERGE (i)-[g:KNOWLEDGE {kind: 'gate'}]->(o)
-       SET g.cap = 1""",
-    # System -> in-port of everyone who knows it.
-    """MATCH (p:Person)-[k:KNOWS]->(s:System) WHERE k.score >= $min_score
-       WITH s, p.handle AS h
-       MATCH (i:Port {side: 'in'}) WHERE i.person = h
-       MERGE (s)-[e:KNOWLEDGE {kind: 'knows'}]->(i)
-       SET e.cap = 1""",
-    # Out-port -> in-port along every collaboration (stored both ways already).
-    """MATCH (a:Person)-[:COLLABORATES]->(b:Person)
-       WITH a.handle AS ah, b.handle AS bh
-       MATCH (ao:Port {side: 'out'}) WHERE ao.person = ah
-       MATCH (bi:Port {side: 'in'}) WHERE bi.person = bh
-       MERGE (ao)-[e:KNOWLEDGE {kind: 'channel'}]->(bi)
-       SET e.cap = 1""",
-    # Out-port -> every team the person is a member of.
-    """MATCH (p:Person)-[:MEMBER_OF]->(t:Team)
+       MERGE (i)-[g:{T} {kind: 'gate'}]->(o) SET g.cap = 1
+       MERGE (s)-[e:{T} {kind: 'knows'}]->(i) SET e.cap = 1""",
+    # Every active approver of a team that depends on it: a gate, and out-port -> team.
+    """MATCH (s:System {name: $system})<-[:DEPENDS_ON]-(t:Team)<-[:MEMBER_OF]-(p:Person)
+       WHERE p.left_at IS NULL
        WITH t, p.handle AS h
-       MATCH (o:Port {side: 'out'}) WHERE o.person = h
-       MERGE (o)-[e:KNOWLEDGE {kind: 'member'}]->(t)
-       SET e.cap = 1""",
+       MERGE (i:Port {person: h, side: 'in'})
+       MERGE (o:Port {person: h, side: 'out'})
+       MERGE (i)-[g:{T} {kind: 'gate'}]->(o) SET g.cap = 1
+       MERGE (o)-[e:{T} {kind: 'member'}]->(t) SET e.cap = 1""",
+    # A knower's out-port -> the in-port of each approver they work with who doesn't
+    # know the system themselves (one who does already has a route of their own).
+    """MATCH (s:System {name: $system})<-[kk:KNOWS]-(k:Person)-[:COLLABORATES]->(a:Person),
+             (a)-[:MEMBER_OF]->(:Team)-[:DEPENDS_ON]->(s)
+       WHERE kk.score >= $min_score AND k.left_at IS NULL AND a.left_at IS NULL
+       OPTIONAL MATCH (a)-[ka:KNOWS]->(s)
+       WITH k, a, ka WHERE ka IS NULL OR ka.score < $min_score
+       WITH DISTINCT k.handle AS kh, a.handle AS ah
+       MATCH (ko:Port {side: 'out'}) WHERE ko.person = kh
+       MATCH (ai:Port {side: 'in'}) WHERE ai.person = ah
+       MERGE (ko)-[e:{T} {kind: 'channel'}]->(ai) SET e.cap = 1""",
 ]
 
 
@@ -107,5 +124,9 @@ def write_org(g: Graph, org: dict) -> None:
 
 
 def build_flow_layer(g: Graph, min_score: float = 0.0) -> None:
-    for q in FLOW_LAYER:
-        g.query(q, {"min_score": min_score})
+    systems = [r[0] for r in g.query("MATCH (s:System) RETURN s.name ORDER BY s.name").result_set]
+    for n, system in enumerate(systems):
+        flow_type = f"FLOW_{n}"
+        g.query("MATCH (s:System {name: $s}) SET s.flow = $t", {"s": system, "t": flow_type})
+        for q in FLOW_LAYER:
+            g.query(q.replace("{T}", flow_type), {"system": system, "min_score": min_score})

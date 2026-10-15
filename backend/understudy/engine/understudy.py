@@ -1,18 +1,21 @@
 """The understudy number: max-flow from a system to the teams that depend on it,
-through people who are each a gate of capacity 1. By Menger's theorem that is the
-number of people who must leave before no route of knowledge reaches the teams."""
+through people who are each a gate of capacity 1. A route is an approver who knows
+the system, or someone who knows it plus an approver they work with (see
+derive/flow.py). By Menger's theorem the number is how many people must leave before
+no approver has a line to anyone who knows the code."""
 
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
 from falkordb import FalkorDB, Graph
+from redis.exceptions import ResponseError
 
 FLOW = """
 MATCH (s:System {name: $system})<-[:DEPENDS_ON]-(t:Team)
 WITH s, collect(t) AS teams
 CALL algo.maxFlow({sourceNodes: [s], targetNodes: teams,
-                   relationshipTypes: ['KNOWLEDGE'], capacityProperty: 'cap'})
+                   relationshipTypes: [s.flow], capacityProperty: 'cap'})
 YIELD maxFlow, edges, edgeFlows
 RETURN maxFlow, id(s), [t IN teams | id(t)],
        [i IN range(0, size(edges) - 1) WHERE edgeFlows[i] > 0 |
@@ -67,7 +70,15 @@ def _routes(source: int, sinks: set[int], used: list) -> list[list[str]]:
 
 def flow(g: Graph, system: str) -> Flow | None:
     """Number and routes for one system, or None if no team depends on it."""
-    rows = g.ro_query(FLOW, {"system": system}).result_set
+    try:
+        rows = g.ro_query(FLOW, {"system": system}).result_set
+    except ResponseError as e:
+        # A system nobody knows and nobody active approves has no flow edges, so its
+        # relationship type was never created and both engines refuse the call.
+        # Its number is simply 0.
+        if "relationship" in str(e).lower() and "type" in str(e).lower():
+            return Flow(0, [])
+        raise
     if not rows:
         return None
     number, source, sinks, used = rows[0]

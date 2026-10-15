@@ -2,6 +2,7 @@
 when data/raw is missing (CI, or a fresh clone before running scripts/fetch.py)."""
 
 import random
+from collections import defaultdict
 from datetime import date
 
 import pytest
@@ -56,15 +57,29 @@ def test_graph_matches_the_org(graph, org):
     members = sum(len(p["teams"]) for p in org["people"])
     assert count("MATCH ()-[m:MEMBER_OF]->() RETURN count(m)") == members
 
-    # Every kind of flow edge is there in full. On 6.0.2 a property-map MATCH can
-    # silently return nothing, which would show up here as a missing kind.
-    kinds = dict(graph.ro_query("MATCH ()-[e:KNOWLEDGE]->() RETURN e.kind, count(e)").result_set)
-    assert kinds == {
-        "gate": len(org["people"]),
-        "knows": len(org["knows"]),
-        "channel": 2 * len(org["collaborates"]),
-        "member": members,
-    }
+    # Every kind of flow edge is there in full for every system, counted again from the
+    # org dict. On 6.0.2 a property-map MATCH can silently return nothing, which would
+    # show up here as a missing or short kind.
+    system_of = dict(graph.ro_query("MATCH (s:System) RETURN s.flow, s.name").result_set)
+    got = defaultdict(dict)
+    for flow_type, kind, n in graph.ro_query(
+        "MATCH ()-[e]->() WHERE e.kind IS NOT NULL RETURN type(e), e.kind, count(e)"
+    ).result_set:
+        got[system_of[flow_type]][kind] = n
+    pairs = {frozenset(c) for c in org["collaborates"]}
+    teams_of = {p["handle"]: set(p["teams"]) for p in org["people"]}
+    for s in org["systems"]:
+        knowers = {k["person"] for k in org["knows"] if k["system"] == s["name"]}
+        approvers = {h for h, teams in teams_of.items() if teams & set(s["teams"])}
+        expected = {
+            "knows": len(knowers),
+            "gate": len(knowers | approvers),
+            "member": sum(len(teams_of[a] & set(s["teams"])) for a in approvers),
+            "channel": sum(
+                frozenset((k, a)) in pairs for k in knowers for a in approvers - knowers
+            ),
+        }
+        assert got[s["name"]] == {k: v for k, v in expected.items() if v}, s["name"]
 
 
 def test_every_system_matches_networkx(graph, org):

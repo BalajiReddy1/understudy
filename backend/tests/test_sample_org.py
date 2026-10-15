@@ -17,12 +17,49 @@ def test_numbers(db):
     assert {s: understudy(g, s) for s in all_systems(g)} == SAMPLE_NUMBERS
 
 
+def edge_counts(g, system: str) -> dict:
+    return dict(
+        g.ro_query(
+            """MATCH (s:System {name: $s}) WITH s.flow AS t
+               MATCH ()-[e]->() WHERE type(e) = t RETURN e.kind, count(e)""",
+            {"s": system},
+        ).result_set
+    )
+
+
 def test_flow_layer_edge_counts(db):
-    # Guards the 6.0.2 property-map bug: if a MATCH silently returns nothing, a kind
-    # of edge goes missing without any error.
+    # Counted by hand. Guards the 6.0.2 property-map bug too: if a MATCH silently
+    # returns nothing, a kind of edge goes missing without any error.
     g = load(db)
-    counts = dict(g.ro_query("MATCH ()-[e:KNOWLEDGE]->() RETURN e.kind, count(e)").result_set)
-    assert counts == {"gate": 7, "knows": 11, "channel": 14, "member": 7}
+    # billing: ana, ben and cara know it; dev is the only payments approver.
+    assert edge_counts(g, "billing") == {"knows": 3, "gate": 4, "member": 1, "channel": 3}
+    # auth: dev, gus and ana know it; platform and growth have six approvers. Channels:
+    # dev->ben, dev->cara, gus->femi, ana->esi. Not dev->ana: ana knows auth already.
+    assert edge_counts(g, "auth") == {"knows": 3, "gate": 7, "member": 6, "channel": 4}
+    types = g.ro_query("MATCH (s:System) RETURN s.name, s.flow ORDER BY s.name").result_set
+    assert [t for _, t in types] == [f"FLOW_{n}" for n in range(5)]
+
+
+def test_routes_are_one_or_two_people(db):
+    g = load(db)
+    auth = flow(g, "auth")
+    assert sorted(map(len, auth.routes)) == [1, 1, 2]  # gus and ana alone, dev via one
+    assert {r[0] for r in auth.routes if len(r) == 1} == {"gus", "ana"}
+
+
+def test_a_system_with_no_flow_edges_scores_zero(db):
+    org = {
+        **SAMPLE_ORG,
+        "teams": [*SAMPLE_ORG["teams"], "nobody"],
+        "systems": [*SAMPLE_ORG["systems"], {"name": "orphan", "teams": ["nobody"]}],
+    }
+    drop(db, "test:sample")
+    g = db.select_graph("test:sample")
+    write_org(g, org)
+    build_flow_layer(g)
+    f = flow(g, "orphan")
+    assert f.number == 0 and f.routes == []
+    assert understudy(g, "billing") == 1
 
 
 def test_billing_runs_through_dev(db):
