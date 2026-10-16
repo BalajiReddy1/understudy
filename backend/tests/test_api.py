@@ -26,6 +26,18 @@ def test_health(client):
     assert client.get("/api/health").json() == {"ok": True, "graph": GRAPH, "systems": 5}
 
 
+def test_model_counts_what_the_graph_holds(client):
+    m = client.get("/api/model").json()
+    ports = m["nodes"].pop("Port")
+    assert m["nodes"] == {"Person": 7, "System": 5, "Team": 3}
+    assert ports == 14  # the flow layer: an in-port and an out-port for each of the 7
+    assert m["edges"]["KNOWS"] == len(SAMPLE_ORG["knows"])
+    assert m["edges"]["COLLABORATES"] == 2 * len(SAMPLE_ORG["collaborates"])  # both ways
+    assert m["edges"]["DEPENDS_ON"] == 6  # auth depends on two teams
+    assert m["flow"]["types"] == 5  # one relationship type per system
+    assert not any(k.startswith("FLOW_") for k in m["edges"])
+
+
 def test_call_board_is_riskiest_first(client):
     board = client.get("/api/systems").json()
     assert {r["name"]: r["understudy"] for r in board} == SAMPLE_NUMBERS
@@ -218,6 +230,17 @@ def test_the_sample_org_runs_on_falkordb(db):
         assert c.get("/api/systems?org=sample&session=abc").status_code == 422
         assert c.get("/api/systems?org=nope").status_code == 422
     drop(db, "test:sample-api")
+
+
+def test_the_backtest_is_served_as_written(db, tmp_path):
+    proof = tmp_path / "proof.json"
+    with TestClient(create_app(GRAPH, db, proof=proof)) as c:
+        r = c.get("/api/proof")
+        assert r.status_code == 404 and "scripts/backtest.py" in r.json()["detail"]
+        proof.write_text('{"summary": {"systems": 3}}')
+        r = c.get("/api/proof")
+        assert r.json() == {"summary": {"systems": 3}}
+        assert r.headers["content-type"].startswith("application/json")
 
 
 def test_the_built_frontend_is_served(db, tmp_path):

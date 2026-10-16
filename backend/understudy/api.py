@@ -29,7 +29,7 @@ from .agent import memory
 from .agent.loop import Reply, ask, citations
 from .agent.tools import Context
 from .agent.trace import Recorder, TracedDB
-from .config import ROOT
+from .config import PROOF, ROOT
 from .db import connect
 from .derive.flow import build_flow_layer, write_org
 from .engine.fixes import FixRejected, UnknownSystem, apply_fix, checked_fix, propose
@@ -49,9 +49,9 @@ DIST = ROOT / "frontend" / "dist"
 mimetypes.add_type("text/javascript", ".js")
 mimetypes.add_type("text/css", ".css")
 mimetypes.add_type("image/svg+xml", ".svg")
-Org =Literal["k8s", "sample"]
+Org = Literal["k8s", "sample"]
 # Throwaway copies a crash could leave behind; dropped when the app starts.
-SCRATCH_PREFIXES = ("rehearsal:", "scratch:", "fix:")
+SCRATCH_PREFIXES = ("rehearsal:", "scratch:", "fix:", "backtest:")
 
 
 class PeopleRequest(BaseModel):
@@ -98,6 +98,7 @@ def create_app(
     ask_limit: tuple[int, float] = (6, 600),
     sample: str = SAMPLE_GRAPH,
     static_dir: Path | None = DIST,
+    proof: Path = PROOF,
 ) -> FastAPI:
     graph = graph or os.environ.get("UNDERSTUDY_GRAPH", "org")
     # The client connects as soon as it's made, so it's made on first use: if FalkorDB
@@ -194,6 +195,29 @@ def create_app(
         g = get_db().select_graph(graph)
         systems = g.ro_query("MATCH (s:System) RETURN count(s)").result_set[0][0]
         return {"ok": True, "graph": graph, "systems": systems}
+
+    @app.get("/api/model")
+    def model() -> dict:
+        """How many of each node and edge the graph holds, for /how. Every system has
+        its own FLOW_<n> type, so those are added up as one entry."""
+        check_built()
+        g = get_db().select_graph(graph)
+        nodes = dict(g.ro_query("MATCH (n) RETURN labels(n)[0], count(n)").result_set)
+        edges, flow_types, flow_edges = {}, 0, 0
+        for kind, n in g.ro_query("MATCH ()-[r]->() RETURN type(r), count(r)").result_set:
+            if kind.startswith("FLOW_"):
+                flow_types, flow_edges = flow_types + 1, flow_edges + n
+            else:
+                edges[kind] = n
+        return {"nodes": nodes, "edges": edges, "flow": {"types": flow_types, "edges": flow_edges}}
+
+    @app.get("/api/proof")
+    def backtest_result() -> FileResponse:
+        """The backtest as scripts/backtest.py wrote it. Served as a file, not run here:
+        it needs data/raw and takes a minute."""
+        if not proof.is_file():
+            raise HTTPException(404, "The backtest hasn't been run. Run scripts/backtest.py.")
+        return FileResponse(proof, media_type="application/json")
 
     @app.get("/api/systems")
     def systems(session: str | None = None, org: Org = "k8s") -> list[dict]:
