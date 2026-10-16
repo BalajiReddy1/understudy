@@ -1,5 +1,7 @@
 from understudy.db import drop
 from understudy.derive.flow import build_flow_layer, write_org
+from understudy.engine.refresh import refresh
+from understudy.engine.stage import call_board, stage
 from understudy.engine.understudy import all_systems, flow, understudy
 from understudy.sample import SAMPLE_NUMBERS, SAMPLE_ORG
 
@@ -85,3 +87,18 @@ def test_rehearsal_on_a_copy_leaves_the_original_alone(db):
     assert understudy(fork, "ledger") == 0
     assert understudy(fork, "auth") == 2
     assert {s: understudy(g, s) for s in all_systems(g)} == SAMPLE_NUMBERS
+
+
+def test_board_and_stage_with_no_optional_properties(db):
+    # Nothing in the sample sets sigs, emeritus_approvers or inactive_owners. The
+    # board query used to return those from an aggregating RETURN after a WITH, which
+    # crashed FalkorDB 6.0.2 outright when a property was null on every row.
+    g = load(db)
+    refresh(db, "test:sample")
+    board = call_board(g)
+    assert [r["name"] for r in board] == ["billing", "ledger", "deploys", "search", "auth"]
+    auth = next(r for r in board if r["name"] == "auth")
+    assert auth["team"] == "growth, platform" and auth["approvers"] == 6
+    assert auth["sigs"] == [] and auth["inactive_owners"] is None
+    s = stage(g, "auth")
+    assert len(s["approvers"]) == 6 and s["team"] == "growth, platform"

@@ -11,13 +11,17 @@ from .understudy import flow
 BOARD = """
 MATCH (s:System)<-[:DEPENDS_ON]-(t:Team)
 OPTIONAL MATCH (t)<-[:MEMBER_OF]-(a:Person) WHERE a.left_at IS NULL
-WITH s, t, count(DISTINCT a) AS approvers
+WITH s, collect(DISTINCT t.name) AS teams, count(DISTINCT a) AS approvers
 OPTIONAL MATCH (s)<-[:KNOWS]-(k:Person) WHERE k.left_at IS NULL
-WITH s, t, approvers, count(DISTINCT k) AS knowers
+WITH s, teams, approvers, count(DISTINCT k) AS knowers
 OPTIONAL MATCH (s)<-[:CRITICAL]-(c:Person)
-RETURN s.name, s.understudy, knowers, approvers, count(DISTINCT c) AS critical, t.name,
+WITH s, teams, approvers, knowers, count(DISTINCT c) AS critical
+RETURN s.name, s.understudy, knowers, approvers, critical, teams,
        s.sigs, s.emeritus_approvers, s.inactive_owners
 """
+# All aggregation finishes in a WITH. On 6.0.2, an aggregating RETURN after an
+# aggregating WITH that returns a property null on every row panics the server
+# (reply.rs: unwrap on None), e.g. when no system has `sigs` set.
 
 
 def call_board(g: Graph) -> list[dict]:
@@ -30,7 +34,7 @@ def call_board(g: Graph) -> list[dict]:
             "knowers": knowers,
             "approvers": approvers,
             "critical": critical,
-            "team": team,
+            "team": ", ".join(sorted(teams)),
             "sigs": sigs or [],
             "emeritus_approvers": emeritus or 0,
             "inactive_owners": inactive,
@@ -41,7 +45,7 @@ def call_board(g: Graph) -> list[dict]:
             knowers,
             approvers,
             critical,
-            team,
+            teams,
             sigs,
             emeritus,
             inactive,
@@ -53,12 +57,13 @@ def call_board(g: Graph) -> list[dict]:
 def stage(g: Graph, system: str) -> dict | None:
     rows = g.ro_query(
         """MATCH (s:System {name: $s})<-[:DEPENDS_ON]-(t:Team)
-           RETURN t.name, s.sigs, s.emeritus_approvers, s.inactive_owners""",
+           WITH s, collect(t.name) AS teams
+           RETURN teams, s.sigs, s.emeritus_approvers, s.inactive_owners""",
         {"s": system},
     ).result_set
     if not rows:
         return None
-    team, sigs, emeritus, inactive = rows[0]
+    teams, sigs, emeritus, inactive = rows[0]
     f = flow(g, system)
     on_route = set(f.carriers)
     critical = {
@@ -75,10 +80,11 @@ def stage(g: Graph, system: str) -> dict | None:
         {"s": system},
     ).result_set
     approvers = g.ro_query(
-        """MATCH (p:Person)-[:MEMBER_OF]->(:Team {name: $t})
-           OPTIONAL MATCH (p)-[k:KNOWS]->(:System {name: $s})
+        """MATCH (p:Person)-[:MEMBER_OF]->(:Team)-[:DEPENDS_ON]->(s:System {name: $s})
+           WITH DISTINCT p, s
+           OPTIONAL MATCH (p)-[k:KNOWS]->(s)
            RETURN p.handle, k IS NOT NULL, p.left_at IS NOT NULL ORDER BY p.handle""",
-        {"t": team, "s": system},
+        {"s": system},
     ).result_set
 
     def person(h: str, off: bool) -> dict:
@@ -87,7 +93,7 @@ def stage(g: Graph, system: str) -> dict | None:
     return {
         "name": system,
         "understudy": f.number,
-        "team": team,
+        "team": ", ".join(sorted(teams)),
         "sigs": sigs or [],
         "emeritus_approvers": emeritus or 0,
         "inactive_owners": inactive,

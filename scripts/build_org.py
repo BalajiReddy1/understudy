@@ -52,8 +52,10 @@ def report(g) -> None:
            OPTIONAL MATCH (t)<-[:MEMBER_OF]-(a:Person)
            WITH s, t, count(DISTINCT a) AS approvers
            OPTIONAL MATCH (s)<-[:KNOWS]-(k:Person)
-           RETURN s.name, t.name, s.sigs, approvers, count(DISTINCT k) AS knowers,
+           WITH s, t, approvers, count(DISTINCT k) AS knowers
+           RETURN s.name, t.name, s.sigs, approvers, knowers,
                   s.understudy, s.emeritus_approvers, s.inactive_owners"""
+        # Aggregation ends in a WITH: see the 6.0.2 crash note in engine/stage.py.
     ).result_set
 
     print("\nunderstudy number -> systems:", dict(sorted(Counter(r[5] for r in rows).items())))
