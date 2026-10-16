@@ -35,6 +35,9 @@ class Rehearsal:
     rerun: list[str]  # systems whose flow was run again
     total_systems: int
     timings_ms: dict[str, float] = field(default_factory=dict)
+    # Routes after the departure for every re-run system, including ones whose number
+    # held because a route moved around the people who left.
+    routes: dict[str, list[list[str]]] = field(default_factory=dict)
 
 
 def _checked(g: Graph, people: list[str]) -> list[str]:
@@ -91,6 +94,7 @@ def rehearse(db: FalkorDB, graph: str, people: list[str], workers: int = 8) -> R
         people=people,
         changes=_changes(before, after),
         rerun=list(before),
+        routes={s: f.routes for s, f in after.items()},
         total_systems=_total(g),
         timings_ms={
             "lookup": round((t1 - t0) * 1000, 1),
@@ -126,6 +130,7 @@ def depart(db: FalkorDB, graph: str, people: list[str]) -> Rehearsal:
         people=people,
         changes=_changes(before, after),
         rerun=list(before),
+        routes={s: f.routes for s, f in after.items()},
         total_systems=_total(g),
         timings_ms={"total": round((time.perf_counter() - t0) * 1000, 1)},
     )

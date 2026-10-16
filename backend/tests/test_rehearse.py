@@ -118,3 +118,18 @@ def test_shortcut_matches_a_full_recompute(db, seed):
                 assert after == before, (seed, s["name"], leaving)
     assert no_forks_left(db)
     drop(db, name)
+
+
+def test_routes_come_back_for_every_rerun_system(db):
+    load(db, "test:rh-sample", SAMPLE_ORG)
+    held = []
+    for p in SAMPLE_ORG["people"]:
+        r = rehearse(db, "test:rh-sample", [p["handle"]])
+        assert set(r.routes) == set(r.rerun)
+        for system, routes in r.routes.items():
+            assert all(p["handle"] not in route for route in routes), (p["handle"], system)
+        changed = {c.system for c in r.changes}
+        held += [(p["handle"], s) for s in r.rerun if s not in changed]
+    # Some departure moves a route without lowering a number; those routes matter most,
+    # because the old ones would still be drawn through the person who left.
+    assert held
