@@ -38,7 +38,7 @@ class Recorder:
 
 def _graph_kind(name: str) -> str:
     # Copies have random names; the kind is what a reader needs.
-    return name.split(":", 1)[0] + ":…" if ":" in name else name
+    return name.split(":", 1)[0] + ":*" if ":" in name else name
 
 
 class TracedGraph:

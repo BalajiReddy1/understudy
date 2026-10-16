@@ -113,7 +113,7 @@ def test_rehearse_and_memory(ctx):
     }
     assert "3 of 5 systems would drop" in r.summary
     copies = [q for q in ctx.db.recorder.take() if q.cypher.startswith("GRAPH.COPY")]
-    assert copies and copies[0].graph == "rehearsal:…"
+    assert copies and copies[0].graph == "rehearsal:*"
 
     # What the rehearsal found is remembered, dated, and read back next time.
     again = call(ctx, "understudies", {"system": "billing"})

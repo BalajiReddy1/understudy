@@ -57,11 +57,18 @@ class Tool:
 # --- resolving names against the graph --------------------------------------------
 
 
+def system_names(ctx: Context) -> list[str]:
+    g = ctx.db.select_graph(ctx.graph)
+    return [r[0] for r in g.ro_query("MATCH (s:System) RETURN s.name").result_set]
+
+
 def resolve_system(ctx: Context, text: str) -> tuple[str | None, Result | None]:
+    return match_system(system_names(ctx), text)
+
+
+def match_system(names: list[str], text: str) -> tuple[str | None, Result | None]:
     """A system name from what someone typed: an exact name, a path inside a system,
     or words that pick out one system ("kubelet config")."""
-    g = ctx.db.select_graph(ctx.graph)
-    names = [r[0] for r in g.ro_query("MATCH (s:System) RETURN s.name").result_set]
     q = (text or "").strip().strip("/").lower()
     q = q.removeprefix("kubernetes/kubernetes/").removeprefix("kubernetes/")
     for n in names:
@@ -423,6 +430,7 @@ def why(ctx: Context, system: str) -> Result:
             "url": url,
             "prs": prs,
             "approvers_still_around": sorted(set(approvers or []) & around),
+            "approvers_still_active": len(set(approvers or []) & around),
             "approvers_total": total,
         }
         for number, title, stage_, status, url, approvers, total, prs in rows
