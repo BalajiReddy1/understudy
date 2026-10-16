@@ -55,6 +55,53 @@ class UnknownSystem(KeyError):
     pass
 
 
+class FixRejected(ValueError):
+    """A requested fix that can't be applied, with the status an API should answer."""
+
+    def __init__(self, message: str, status: int):
+        super().__init__(message)
+        self.message, self.status = message, status
+
+
+def checked_fix(g: Graph, system: str, kind: str, knower: str, approver: str | None) -> Fix:
+    """Turn a request into a Fix, refusing anything that couldn't do what it claims:
+    the knower must know the system, and a pairing's approver must approve it."""
+    rows = g.ro_query(
+        "MATCH (s:System {name: $s})<-[:DEPENDS_ON]-(t:Team) RETURN t.name", {"s": system}
+    ).result_set
+    if not rows:
+        raise FixRejected(f"No system called '{system}'.", 404)
+    if kind not in ("pair", "approve"):
+        raise FixRejected("A fix is either 'pair' or 'approve'.", 422)
+    if kind == "pair" and not approver:
+        raise FixRejected("A pairing needs an approver.", 422)
+    people = [knower] + ([approver] if kind == "pair" else [])
+    found = {
+        r[0]
+        for r in g.ro_query(
+            "MATCH (p:Person) WHERE p.handle IN $h AND p.left_at IS NULL RETURN p.handle",
+            {"h": people},
+        ).result_set
+    }
+    if missing := [h for h in people if h not in found]:
+        raise FixRejected(f"Nobody on stage is called {', '.join(missing)}.", 404)
+    team = rows[0][0]
+    knows = g.ro_query(
+        "MATCH (:Person {handle: $k})-[r:KNOWS]->(:System {name: $s}) RETURN count(r)",
+        {"k": knower, "s": system},
+    ).result_set[0][0]
+    if not knows:
+        raise FixRejected(f"{knower} doesn't know {system}.", 422)
+    if kind == "pair":
+        approves = g.ro_query(
+            "MATCH (:Person {handle: $a})-[r:MEMBER_OF]->(:Team {name: $t}) RETURN count(r)",
+            {"a": approver, "t": team},
+        ).result_set[0][0]
+        if not approves:
+            raise FixRejected(f"{approver} doesn't approve {system}.", 422)
+    return Fix(kind, knower, approver if kind == "pair" else None, team, 0)
+
+
 def _touched(g: Graph, fix: Fix) -> list[str]:
     """Systems whose flow edges the change can alter."""
     if fix.kind == "approve":

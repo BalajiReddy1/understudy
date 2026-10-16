@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 from redis.exceptions import ConnectionError as RedisConnectionError
 
 from .db import connect
-from .engine.fixes import Fix, UnknownSystem, apply_fix, propose
+from .engine.fixes import FixRejected, UnknownSystem, apply_fix, checked_fix, propose
 from .engine.refresh import refresh
 from .engine.rehearse import UnknownPeople, depart, rehearse
 from .engine.sessions import Session, SessionGone, Sessions
@@ -167,38 +167,10 @@ def create_app(graph: str | None = None, db: FalkorDB | None = None) -> FastAPI:
     def session_fix(session_id: str, body: FixRequest) -> dict:
         s = sessions.get(session_id)
         g = get_db().select_graph(s.graph)
-        rows = g.ro_query(
-            "MATCH (s:System {name: $s})<-[:DEPENDS_ON]-(t:Team) RETURN t.name", {"s": body.system}
-        ).result_set
-        if not rows:
-            raise HTTPException(404, f"No system called '{body.system}'.")
-        if body.kind == "pair" and not body.approver:
-            raise HTTPException(422, "A pairing needs an approver.")
-        people = [body.knower] + ([body.approver] if body.kind == "pair" else [])
-        found = {
-            r[0]
-            for r in g.ro_query(
-                "MATCH (p:Person) WHERE p.handle IN $h AND p.left_at IS NULL RETURN p.handle",
-                {"h": people},
-            ).result_set
-        }
-        if missing := [h for h in people if h not in found]:
-            raise HTTPException(404, f"Nobody on stage is called {', '.join(missing)}.")
-        team = rows[0][0]
-        knows = g.ro_query(
-            "MATCH (:Person {handle: $k})-[r:KNOWS]->(:System {name: $s}) RETURN count(r)",
-            {"k": body.knower, "s": body.system},
-        ).result_set[0][0]
-        if not knows:
-            raise HTTPException(422, f"{body.knower} doesn't know {body.system}.")
-        if body.kind == "pair":
-            approves = g.ro_query(
-                "MATCH (:Person {handle: $a})-[r:MEMBER_OF]->(:Team {name: $t}) RETURN count(r)",
-                {"a": body.approver, "t": team},
-            ).result_set[0][0]
-            if not approves:
-                raise HTTPException(422, f"{body.approver} doesn't approve {body.system}.")
-        fix = Fix(body.kind, body.knower, body.approver, team, 0)
+        try:
+            fix = checked_fix(g, body.system, body.kind, body.knower, body.approver)
+        except FixRejected as e:
+            raise HTTPException(e.status, e.message) from e
         changes = apply_fix(get_db(), s.graph, fix)
         s.changes.append({"type": "fix", **body.model_dump()})
         return {"changes": [asdict(c) for c in changes]}
