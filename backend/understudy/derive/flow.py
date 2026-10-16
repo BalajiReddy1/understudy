@@ -10,6 +10,9 @@ the Kubernetes loader:
     people:       [{"handle": "ana", "teams": ["growth"]}, ...]       teams = MEMBER_OF
     knows:        [{"person": "ana", "system": "billing", "score": 1.0}, ...]
     collaborates: [["ana", "dev"], ...]                               undirected pairs
+    decisions:    optional, [{"number", "title", "status", "stage", "sig", "url",
+                  "approvers", "approvers_total", "systems": [{"name", "prs"}]}, ...]
+                  written as (:Decision)-[:SHAPED {prs}]->(:System)
 
 The flow layer. A route from a system to a team that depends on it is either one
 person (an approver who knows the system) or two (someone who knows it, then an
@@ -43,6 +46,7 @@ INDEXES = [
     "CREATE INDEX FOR (s:System) ON (s.name)",
     "CREATE INDEX FOR (t:Team) ON (t.name)",
     "CREATE INDEX FOR (p:Port) ON (p.person)",
+    "CREATE INDEX FOR (d:Decision) ON (d.number)",
 ]
 
 # {T} is the system's own relationship type. Type names can't be query parameters, so
@@ -120,6 +124,17 @@ def write_org(g: Graph, org: dict) -> None:
         """UNWIND $rows AS c MATCH (a:Person {handle: c[0]}), (b:Person {handle: c[1]})
            CREATE (a)-[:COLLABORATES]->(b)""",
         [list(p) for p in sorted(pairs)],
+    )
+    _batched(
+        g,
+        """UNWIND $rows AS d
+           CREATE (x:Decision {number: d.number, title: d.title, url: d.url,
+                               approvers: d.approvers, approvers_total: d.approvers_total})
+           SET x.status = d.status, x.stage = d.stage, x.sig = d.sig
+           WITH x, d UNWIND d.systems AS link
+           MATCH (s:System {name: link.name})
+           CREATE (x)-[:SHAPED {prs: link.prs}]->(s)""",
+        org.get("decisions", []),
     )
 
 

@@ -385,6 +385,57 @@ def who_can_review(ctx: Context, system: str) -> Result:
     return Result("ok", summary, {"system": name, "reviewers": reviewers})
 
 
+def why(ctx: Context, system: str) -> Result:
+    name, problem = resolve_system(ctx, system)
+    if problem:
+        return problem
+    g = ctx.db.select_graph(ctx.graph)
+    rows = g.ro_query(
+        """MATCH (d:Decision)-[r:SHAPED]->(:System {name: $s})
+           RETURN d.number, d.title, d.stage, d.status, d.url, d.approvers,
+                  d.approvers_total, r.prs
+           ORDER BY r.prs DESC, d.number LIMIT 5""",
+        {"s": name},
+    ).result_set
+    if not rows:
+        return Result(
+            "not_in_graph",
+            f"No merged PR touching {name} since January 2024 names a KEP, so the graph "
+            "can't say which design decisions shaped it.",
+            {"system": name, "decisions": []},
+        )
+    around = {
+        r[0]
+        for r in g.ro_query(
+            """MATCH (d:Decision)-[:SHAPED]->(:System {name: $s})
+               UNWIND d.approvers AS a
+               MATCH (p:Person {handle: a}) WHERE p.left_at IS NULL
+               RETURN DISTINCT p.handle""",
+            {"s": name},
+        ).result_set
+    }
+    decisions = [
+        {
+            "kep": number,
+            "title": title,
+            "stage": stage_,
+            "status": status,
+            "url": url,
+            "prs": prs,
+            "approvers_still_around": sorted(set(approvers or []) & around),
+            "approvers_total": total,
+        }
+        for number, title, stage_, status, url, approvers, total, prs in rows
+    ]
+    top = decisions[0]
+    summary = (
+        f"The design decision behind the most work on {name} is KEP-{top['kep']}, "
+        f'"{top["title"]}" ({top["prs"]} PRs). {len(top["approvers_still_around"])} of its '
+        f"{top['approvers_total']} approvers are still active here."
+    )
+    return Result("ok", summary, {"system": name, "decisions": decisions})
+
+
 def recall_findings(ctx: Context, system: str) -> Result:
     name, problem = resolve_system(ctx, system)
     if problem:
@@ -457,6 +508,13 @@ TOOLS: list[Tool] = [
         "or are critical to it.",
         _schema({"system": SYSTEM}, ["system"]),
         who_can_review,
+    ),
+    Tool(
+        "why",
+        "The design decisions (Kubernetes KEPs) behind a system, from the PRs that name "
+        "them, and whether the people who approved them are still active.",
+        _schema({"system": SYSTEM}, ["system"]),
+        why,
     ),
     Tool(
         "recall",

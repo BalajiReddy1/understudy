@@ -14,7 +14,10 @@ from understudy.sample import SAMPLE_ORG
 GRAPH = "test:tools"
 VISITOR = "test-visitor"
 # The tools only take pseudonyms, so the sample org's names are mapped to some.
-P = {h: f"contributor-{i:04x}" for i, h in enumerate(["ana", "ben", "cara", "dev", "esi", "femi", "gus"], 10)}
+P = {
+    h: f"contributor-{i:04x}"
+    for i, h in enumerate(["ana", "ben", "cara", "dev", "esi", "femi", "gus"], 10)
+}
 
 
 def pseudonymised(org: dict) -> dict:

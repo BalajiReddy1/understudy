@@ -30,6 +30,7 @@ from pathlib import Path
 
 import yaml
 
+from .decisions import link_decisions
 from .people import is_bot, pseudonyms
 
 ROOTS = ("pkg/", "cmd/", "plugin/", "staging/src/k8s.io/")
@@ -273,10 +274,12 @@ def derive_org(
     aliases: list[tuple[datetime, dict]],
     as_of: date,
     salt: str,
+    keps: dict[int, dict] | None = None,
 ) -> tuple[dict, dict[str, str]]:
     """Returns the org and the login -> pseudonym map. Pass OWNERS files loaded for
-    the same as-of date. The map is for matching departures later; it must never be
-    written anywhere public."""
+    the same as-of date, and KEPs (derive/decisions.py) to link the decisions behind
+    each system. The map is for matching departures later; it must never be written
+    anywhere public."""
     until = end_of(as_of)
     knows_since, recent_since = until - KNOWS_WINDOW, until - RECENT_WINDOW
     smap = SystemMap(owners, prs, knows_since, until)
@@ -352,4 +355,9 @@ def derive_org(
         "knows": [{"person": names[p], "system": s, "score": v} for p, s, v in knows_rows],
         "collaborates": [[names[a], names[b]] for a, b in collab_rows],
     }
+    if keps:
+        decisions = link_decisions(prs, smap.system_of, keps, names, until)
+        for d in decisions:
+            d["systems"] = [s for s in d["systems"] if s["name"] in system_names]
+        org["decisions"] = [d for d in decisions if d["systems"]]
     return org, names

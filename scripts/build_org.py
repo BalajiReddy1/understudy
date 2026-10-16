@@ -11,6 +11,7 @@ from datetime import date
 
 from understudy.config import RAW, salt
 from understudy.db import connect, drop
+from understudy.derive.decisions import load_keps
 from understudy.derive.flow import build_flow_layer, write_org
 from understudy.derive.kubernetes import derive_org, load_aliases, load_owners, load_prs
 from understudy.engine.refresh import refresh
@@ -24,12 +25,13 @@ def main() -> None:
 
     t0 = time.perf_counter()
     prs, owners, aliases = load_prs(RAW), load_owners(RAW, args.as_of), load_aliases(RAW)
-    org, _ = derive_org(prs, owners, aliases, args.as_of, salt())
+    org, _ = derive_org(prs, owners, aliases, args.as_of, salt(), load_keps(RAW))
     t1 = time.perf_counter()
     print(
         f"derived from {len(prs)} PRs in {t1 - t0:.1f}s: {len(org['systems'])} systems, "
         f"{len(org['teams'])} approver teams, {len(org['people'])} people, "
-        f"{len(org['knows'])} KNOWS, {len(org['collaborates'])} COLLABORATES pairs"
+        f"{len(org['knows'])} KNOWS, {len(org['collaborates'])} COLLABORATES pairs, "
+        f"{len(org.get('decisions', []))} KEPs linked to systems"
     )
 
     db = connect()
