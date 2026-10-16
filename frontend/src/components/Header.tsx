@@ -4,6 +4,7 @@ const LINKS = [
   ['/', 'Sample org'],
   ['/k8s', 'Kubernetes'],
   ['/proof', 'Proof'],
+  ['/how', 'How it works'],
 ]
 
 interface Props {

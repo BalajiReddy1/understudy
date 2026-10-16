@@ -1,4 +1,5 @@
 import { Header } from './components/Header'
+import { How } from './pages/How'
 import { Landing } from './pages/Landing'
 import { Proof } from './pages/Proof'
 import { Workspace } from './pages/Workspace'
@@ -9,6 +10,7 @@ export function App() {
   if (path === '/') return <Landing />
   if (path === '/k8s') return <Workspace params={params} />
   if (path === '/proof') return <Proof />
+  if (path === '/how') return <How />
   return (
     <div className="landing">
       <Header />

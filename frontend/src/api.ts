@@ -200,8 +200,15 @@ export interface Proof {
   units: ProofUnit[]
 }
 
+export interface Model {
+  nodes: Record<string, number>
+  edges: Record<string, number>
+  flow: { types: number; edges: number }
+}
+
 export const api = {
   proof: () => request<Proof>('/api/proof'),
+  model: () => request<Model>('/api/model'),
   board: (org: Org, session?: string | null) =>
     request<BoardRow[]>(`/api/systems${query({ org, session })}`),
   stage: (org: Org, name: string, session?: string | null) =>

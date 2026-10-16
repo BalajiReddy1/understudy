@@ -124,6 +124,138 @@
   margin: 0.2rem 0 0;
 }
 
+.doc-model {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 2.5rem;
+  margin-top: 1rem;
+}
+
+.doc-model .doc-defs {
+  margin: 0;
+}
+
+.doc-findings dt {
+  font-family: var(--text);
+}
+
+.doc-pipeline {
+  max-width: 66ch;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.doc-pipeline li {
+  position: relative;
+  padding: 0.75rem 0 0.75rem 2.75rem;
+  border-left: 2px solid var(--green);
+  margin-left: 0.9rem;
+  counter-increment: step;
+}
+
+.doc-pipeline li::before {
+  content: counter(step);
+  position: absolute;
+  left: -0.95rem;
+  top: 0.7rem;
+  display: grid;
+  place-items: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--page);
+  font-family: var(--mono);
+  font-size: var(--step--2);
+}
+
+/* --- queries ------------------------------------------------------------------- */
+
+.doc-queries {
+  display: grid;
+  /* minmax(0, ...) so a long Cypher line scrolls inside its block, not the page. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.75rem;
+  margin-top: 1.25rem;
+}
+
+.doc-query h3 {
+  font-size: var(--step-1);
+}
+
+.doc-query > p:first-of-type {
+  margin-top: 0.3rem;
+  max-width: 66ch;
+}
+
+.doc-query pre {
+  margin: 0.6rem 0 0.3rem;
+  padding: 0.9rem 1rem;
+  overflow-x: auto;
+  border-radius: var(--radius-sm);
+  background: var(--green-wash);
+  font-size: var(--step--1);
+  line-height: 1.5;
+}
+
+/* --- the flow diagram on /how --------------------------------------------------- */
+
+.flow-diagram {
+  margin: 1.25rem 0 0.5rem;
+  max-width: 46rem;
+  overflow-x: auto;
+}
+
+.flow-diagram svg {
+  display: block;
+  min-width: 34rem;
+  width: 100%;
+  height: auto;
+  font-family: var(--mono);
+}
+
+.flow-node rect {
+  fill: var(--page);
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+
+.flow-node.is-system rect {
+  fill: var(--green);
+}
+
+.flow-node.is-gate rect {
+  stroke: var(--green-ink);
+  stroke-width: 2.5;
+}
+
+.flow-node text {
+  font-size: 13px;
+  fill: var(--ink);
+}
+
+.flow-node .flow-sub {
+  font-size: 11px;
+  fill: var(--ink-soft);
+}
+
+.flow-edge line {
+  stroke: var(--green-ink);
+  stroke-width: 2;
+}
+
+.flow-edge path {
+  fill: var(--green-ink);
+}
+
+.flow-edge text,
+.flow-note {
+  font-size: 11px;
+  fill: var(--ink-soft);
+}
+
 /* --- the proof chart ------------------------------------------------------------ */
 
 .proof-chart {
@@ -326,7 +458,8 @@
   .doc-figures {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .proof-chart {
+  .proof-chart,
+  .doc-model {
     grid-template-columns: 1fr;
   }
 }
