@@ -117,3 +117,50 @@ def test_database_down_then_back(db, monkeypatch):
         drop(db, GRAPH)
         write_org(db.select_graph(GRAPH), SAMPLE_ORG)
         assert c.get("/api/health").json()["systems"] == 5
+
+
+# --- sessions -------------------------------------------------------------
+
+
+def board(client, session=None) -> dict:
+    url = "/api/systems" + (f"?session={session}" if session else "")
+    return {r["name"]: r["understudy"] for r in client.get(url).json()}
+
+
+def test_a_visitor_session(client, db):
+    sid = client.post("/api/sessions").json()["id"]
+
+    r = client.post(f"/api/sessions/{sid}/depart", json={"people": ["dev"]})
+    assert r.status_code == 200
+    assert {c["system"] for c in r.json()["changes"]} == {"billing", "ledger", "auth"}
+    assert board(client, sid)["billing"] == 0
+    assert board(client) == SAMPLE_NUMBERS  # the base graph never changes
+
+    stage = client.get(f"/api/systems/billing?session={sid}").json()
+    assert stage["approvers"][0]["off_stage"] is True and stage["routes"] == []
+
+    # A rehearsal on top of the session starts from the session's state.
+    r = client.post(f"/api/rehearse?session={sid}", json={"people": ["gus"]})
+    assert {c["system"]: c["after"] for c in r.json()["changes"]}["auth"] == 1
+
+    log = client.get(f"/api/sessions/{sid}").json()["changes"]
+    assert log == [{"type": "depart", "people": ["dev"]}]
+
+    assert client.post(f"/api/sessions/{sid}/reset").json()["changes"] == []
+    assert board(client, sid) == SAMPLE_NUMBERS
+    assert client.delete(f"/api/sessions/{sid}").json() == {"ok": True}
+    r = client.get(f"/api/systems?session={sid}")
+    assert r.status_code == 404 and "Start a new one" in r.json()["detail"]
+    assert not [n for n in db.list_graphs() if n.startswith("session:")]
+
+
+def test_start_up_clears_leftover_copies(db):
+    drop(db, GRAPH)
+    g = db.select_graph(GRAPH)
+    write_org(g, SAMPLE_ORG)
+    build_flow_layer(g)
+    for name in ("rehearsal:old", "scratch:old", "session:old"):
+        g.copy(name)
+    with TestClient(create_app(GRAPH, db)):
+        left = [n for n in db.list_graphs() if n.endswith(":old")]
+    assert left == []

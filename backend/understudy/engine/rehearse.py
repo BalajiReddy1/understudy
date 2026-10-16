@@ -1,13 +1,16 @@
-"""Rehearse a departure: copy the graph, take people off stage on the copy, re-run
-only the flows they carried, and compare. The graph being rehearsed never changes."""
+"""Departures. rehearse() copies the graph, takes people off stage on the copy, re-runs
+only the flows they carried and compares; the graph being rehearsed never changes.
+depart() does it for real, on a visitor's own session copy."""
 
 import time
 import uuid
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 
 from falkordb import FalkorDB, Graph
 
 from ..db import copy
+from .refresh import refresh
 from .understudy import Flow, flows, take_off_stage
 
 
@@ -96,4 +99,33 @@ def rehearse(db: FalkorDB, graph: str, people: list[str], workers: int = 8) -> R
             "cleanup": round((t4 - t3) * 1000, 1),
             "total": round((t4 - t0) * 1000, 1),
         },
+    )
+
+
+def depart(db: FalkorDB, graph: str, people: list[str]) -> Rehearsal:
+    """Take people off stage for real on `graph`, which must be a session copy.
+
+    Unlike a rehearsal this refreshes every system they were part of, not only the
+    ones they carried: a number can't move otherwise, but who is critical can (losing
+    someone's backup makes them critical)."""
+    t0 = time.perf_counter()
+    g = db.select_graph(graph)
+    people = _checked(g, people)
+    rows = g.ro_query(
+        """MATCH (i:Port {side: 'in'})-[e]->(:Port {side: 'out'})
+           WHERE i.person IN $h AND e.kind = 'gate'
+           WITH DISTINCT type(e) AS t
+           MATCH (s:System) WHERE s.flow = t
+           RETURN s.name, s.understudy ORDER BY s.name""",
+        {"h": people},
+    ).result_set
+    before = dict(rows)
+    take_off_stage(g, people, datetime.now(UTC).isoformat(timespec="seconds"))
+    after = refresh(db, graph, list(before))
+    return Rehearsal(
+        people=people,
+        changes=_changes(before, after),
+        rerun=list(before),
+        total_systems=_total(g),
+        timings_ms={"total": round((time.perf_counter() - t0) * 1000, 1)},
     )
