@@ -119,7 +119,7 @@ def test_database_down_then_back(db, monkeypatch):
         assert c.get("/api/health").json()["systems"] == 5
 
 
-# --- sessions -------------------------------------------------------------
+# --- sessions and fixes -------------------------------------------------------------
 
 
 def board(client, session=None) -> dict:
@@ -154,12 +154,50 @@ def test_a_visitor_session(client, db):
     assert not [n for n in db.list_graphs() if n.startswith("session:")]
 
 
+def test_fixes_proposed_then_applied(client):
+    proposal = client.get("/api/fixes/billing").json()
+    assert proposal["before"] == 1 and proposal["fixes"]
+    best = proposal["fixes"][0]
+    assert best["kind"] == "approve" and best["gain"] == 1
+
+    sid = client.post("/api/sessions").json()["id"]
+    r = client.post(
+        f"/api/sessions/{sid}/fix",
+        json={"system": "billing", "kind": best["kind"], "knower": best["knower"]},
+    )
+    assert r.status_code == 200
+    assert {c["system"]: c["after"] for c in r.json()["changes"]}["billing"] == 2
+    assert board(client, sid)["billing"] == 2
+    assert board(client)["billing"] == 1
+    client.delete(f"/api/sessions/{sid}")
+
+
+def test_fix_requests_are_checked(client):
+    sid = client.post("/api/sessions").json()["id"]
+    url = f"/api/sessions/{sid}/fix"
+
+    def post(**body):
+        return client.post(url, json={"system": "billing", **body})
+
+    assert post(kind="pair", knower="ana").status_code == 422  # no approver
+    assert post(kind="approve", knower="esi").status_code == 422  # esi doesn't know billing
+    assert post(kind="pair", knower="ana", approver="gus").status_code == 422  # not payments
+    assert post(kind="approve", knower="nobody").status_code == 404
+    assert post(kind="teach", knower="ana").status_code == 422
+    assert (
+        client.post(url, json={"system": "nope", "kind": "approve", "knower": "ana"}).status_code
+        == 404
+    )
+    assert client.get("/api/fixes/nope").status_code == 404
+    client.delete(f"/api/sessions/{sid}")
+
+
 def test_start_up_clears_leftover_copies(db):
     drop(db, GRAPH)
     g = db.select_graph(GRAPH)
     write_org(g, SAMPLE_ORG)
     build_flow_layer(g)
-    for name in ("rehearsal:old", "scratch:old", "session:old"):
+    for name in ("rehearsal:old", "scratch:old", "fix:old", "session:old"):
         g.copy(name)
     with TestClient(create_app(GRAPH, db)):
         left = [n for n in db.list_graphs() if n.endswith(":old")]

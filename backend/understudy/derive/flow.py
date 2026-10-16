@@ -123,10 +123,19 @@ def write_org(g: Graph, org: dict) -> None:
     )
 
 
-def build_flow_layer(g: Graph, min_score: float = 0.0) -> None:
-    systems = [r[0] for r in g.query("MATCH (s:System) RETURN s.name ORDER BY s.name").result_set]
-    for n, system in enumerate(systems):
-        flow_type = f"FLOW_{n}"
-        g.query("MATCH (s:System {name: $s}) SET s.flow = $t", {"s": system, "t": flow_type})
+def build_flow_layer(g: Graph, min_score: float = 0.0, systems: list[str] | None = None) -> None:
+    """Build the flow edges for `systems` (default: all). A system without a type yet
+    gets the next free FLOW_<n>. Everything is MERGEd, so building a system again after
+    someone joins a team or a new collaboration adds only the edges that are missing."""
+    rows = g.query("MATCH (s:System) RETURN s.name, s.flow ORDER BY s.name").result_set
+    taken = [int(t.removeprefix("FLOW_")) for _, t in rows if t]
+    n = max(taken, default=-1) + 1
+    types = {}
+    for name, flow_type in rows:
+        if flow_type is None:
+            flow_type, n = f"FLOW_{n}", n + 1
+            g.query("MATCH (s:System {name: $s}) SET s.flow = $t", {"s": name, "t": flow_type})
+        types[name] = flow_type
+    for system in systems if systems is not None else list(types):
         for q in FLOW_LAYER:
-            g.query(q.replace("{T}", flow_type), {"system": system, "min_score": min_score})
+            g.query(q.replace("{T}", types[system]), {"system": system, "min_score": min_score})

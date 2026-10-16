@@ -1,6 +1,6 @@
 """HTTP API. Reads come from the base graph, or from a visitor's own session copy when
-?session=<id> is given. The base graph is never written to: rehearsals run on
-throwaway copies, and departures a visitor applies go to their own session.
+?session=<id> is given. The base graph is never written to: rehearsals and fix trials
+run on throwaway copies, and departures or fixes a visitor applies go to their session.
 
 uv run uvicorn understudy.api:app --port 8000
 """
@@ -8,6 +8,7 @@ uv run uvicorn understudy.api:app --port 8000
 import os
 from contextlib import asynccontextmanager
 from dataclasses import asdict
+from typing import Literal
 
 from falkordb import FalkorDB
 from fastapi import FastAPI, HTTPException, Request
@@ -16,6 +17,7 @@ from pydantic import BaseModel, Field
 from redis.exceptions import ConnectionError as RedisConnectionError
 
 from .db import connect
+from .engine.fixes import Fix, UnknownSystem, apply_fix, propose
 from .engine.refresh import refresh
 from .engine.rehearse import UnknownPeople, depart, rehearse
 from .engine.sessions import Session, SessionGone, Sessions
@@ -23,11 +25,18 @@ from .engine.stage import call_board, stage
 
 MAX_PEOPLE = 10
 # Throwaway copies a crash could leave behind; dropped when the app starts.
-SCRATCH_PREFIXES = ("rehearsal:", "scratch:")
+SCRATCH_PREFIXES = ("rehearsal:", "scratch:", "fix:")
 
 
 class PeopleRequest(BaseModel):
     people: list[str] = Field(min_length=1, max_length=MAX_PEOPLE)
+
+
+class FixRequest(BaseModel):
+    system: str
+    kind: Literal["pair", "approve"]
+    knower: str
+    approver: str | None = None
 
 
 def create_app(graph: str | None = None, db: FalkorDB | None = None) -> FastAPI:
@@ -126,6 +135,13 @@ def create_app(graph: str | None = None, db: FalkorDB | None = None) -> FastAPI:
     def rehearse_departure(body: PeopleRequest, session: str | None = None) -> dict:
         return asdict(rehearse(get_db(), target(session), body.people))
 
+    @app.get("/api/fixes/{name:path}")
+    def fixes(name: str, session: str | None = None) -> dict:
+        try:
+            return asdict(propose(get_db(), target(session), name))
+        except UnknownSystem as e:
+            raise HTTPException(404, f"No system called '{name}'.") from e
+
     # --- sessions -----------------------------------------------------------------
 
     def describe(s: Session) -> dict:
@@ -146,6 +162,46 @@ def create_app(graph: str | None = None, db: FalkorDB | None = None) -> FastAPI:
         result = depart(get_db(), s.graph, body.people)
         s.changes.append({"type": "depart", "people": result.people})
         return asdict(result)
+
+    @app.post("/api/sessions/{session_id}/fix")
+    def session_fix(session_id: str, body: FixRequest) -> dict:
+        s = sessions.get(session_id)
+        g = get_db().select_graph(s.graph)
+        rows = g.ro_query(
+            "MATCH (s:System {name: $s})<-[:DEPENDS_ON]-(t:Team) RETURN t.name", {"s": body.system}
+        ).result_set
+        if not rows:
+            raise HTTPException(404, f"No system called '{body.system}'.")
+        if body.kind == "pair" and not body.approver:
+            raise HTTPException(422, "A pairing needs an approver.")
+        people = [body.knower] + ([body.approver] if body.kind == "pair" else [])
+        found = {
+            r[0]
+            for r in g.ro_query(
+                "MATCH (p:Person) WHERE p.handle IN $h AND p.left_at IS NULL RETURN p.handle",
+                {"h": people},
+            ).result_set
+        }
+        if missing := [h for h in people if h not in found]:
+            raise HTTPException(404, f"Nobody on stage is called {', '.join(missing)}.")
+        team = rows[0][0]
+        knows = g.ro_query(
+            "MATCH (:Person {handle: $k})-[r:KNOWS]->(:System {name: $s}) RETURN count(r)",
+            {"k": body.knower, "s": body.system},
+        ).result_set[0][0]
+        if not knows:
+            raise HTTPException(422, f"{body.knower} doesn't know {body.system}.")
+        if body.kind == "pair":
+            approves = g.ro_query(
+                "MATCH (:Person {handle: $a})-[r:MEMBER_OF]->(:Team {name: $t}) RETURN count(r)",
+                {"a": body.approver, "t": team},
+            ).result_set[0][0]
+            if not approves:
+                raise HTTPException(422, f"{body.approver} doesn't approve {body.system}.")
+        fix = Fix(body.kind, body.knower, body.approver, team, 0)
+        changes = apply_fix(get_db(), s.graph, fix)
+        s.changes.append({"type": "fix", **body.model_dump()})
+        return {"changes": [asdict(c) for c in changes]}
 
     @app.post("/api/sessions/{session_id}/reset")
     def reset_session(session_id: str) -> dict:
