@@ -103,21 +103,11 @@ def all_systems(g: Graph) -> list[str]:
     return [r[0] for r in g.ro_query("MATCH (s:System) RETURN s.name ORDER BY s.name").result_set]
 
 
-def refresh(db: FalkorDB, graph: str, workers: int = 8) -> dict[str, Flow]:
-    """Recompute every system's number and rebuild the CARRIES cache.
-
-    CARRIES records who is on a route for each system. A rehearsal reads it to re-run
-    only the systems a departing person carries, since nobody else's number can move."""
-    g = db.select_graph(graph)
-    results = flows(db, graph, all_systems(g), workers)
-    g.query("MATCH ()-[c:CARRIES]->() DELETE c")
+def take_off_stage(g: Graph, people: list[str], when: str) -> None:
+    """Remove people from every route: deleting their ports deletes their gates."""
     g.query(
-        "UNWIND $rows AS r MATCH (s:System {name: r.name}) SET s.understudy = r.number",
-        {"rows": [{"name": s, "number": f.number} for s, f in results.items()]},
+        """MATCH (p:Person) WHERE p.handle IN $h SET p.left_at = $when
+           WITH collect(p.handle) AS hs
+           MATCH (port:Port) WHERE port.person IN hs DETACH DELETE port""",
+        {"h": people, "when": when},
     )
-    g.query(
-        """UNWIND $rows AS r MATCH (p:Person {handle: r.person}), (s:System {name: r.system})
-           MERGE (p)-[:CARRIES]->(s)""",
-        {"rows": [{"person": p, "system": s} for s, f in results.items() for p in f.carriers]},
-    )
-    return results

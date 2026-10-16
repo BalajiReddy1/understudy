@@ -5,9 +5,10 @@ import time
 import uuid
 from dataclasses import dataclass, field
 
-from falkordb import FalkorDB
+from falkordb import FalkorDB, Graph
 
-from .understudy import Flow, flows
+from ..db import copy
+from .understudy import Flow, flows, take_off_stage
 
 
 class UnknownPeople(ValueError):
@@ -27,15 +28,13 @@ class Change:
 @dataclass
 class Rehearsal:
     people: list[str]
-    changes: list[Change]  # systems whose number dropped, worst first
-    rerun: list[str]  # systems re-run because someone leaving carried them
+    changes: list[Change]  # systems whose number changed, biggest drop first
+    rerun: list[str]  # systems whose flow was run again
     total_systems: int
     timings_ms: dict[str, float] = field(default_factory=dict)
 
 
-def rehearse(db: FalkorDB, graph: str, people: list[str], workers: int = 8) -> Rehearsal:
-    t0 = time.perf_counter()
-    g = db.select_graph(graph)
+def _checked(g: Graph, people: list[str]) -> list[str]:
     people = sorted(set(people))
     found = {
         r[0]
@@ -45,6 +44,24 @@ def rehearse(db: FalkorDB, graph: str, people: list[str], workers: int = 8) -> R
     }
     if missing := [h for h in people if h not in found]:
         raise UnknownPeople(missing)
+    return people
+
+
+def _changes(before: dict[str, int], after: dict[str, Flow]) -> list[Change]:
+    changes = [
+        Change(s, before[s], f.number, f.routes) for s, f in after.items() if f.number != before[s]
+    ]
+    return sorted(changes, key=lambda c: (c.after - c.before, c.after, c.system))
+
+
+def _total(g: Graph) -> int:
+    return g.ro_query("MATCH (s:System) RETURN count(s)").result_set[0][0]
+
+
+def rehearse(db: FalkorDB, graph: str, people: list[str], workers: int = 8) -> Rehearsal:
+    t0 = time.perf_counter()
+    g = db.select_graph(graph)
+    people = _checked(g, people)
 
     # Removing someone who is on no route can't lower a number (those routes stay
     # valid) and can't raise one, so only the systems they CARRY need a new flow.
@@ -54,35 +71,24 @@ def rehearse(db: FalkorDB, graph: str, people: list[str], workers: int = 8) -> R
         {"h": people},
     ).result_set
     before = dict(rows)
-    total = g.ro_query("MATCH (s:System) RETURN count(s)").result_set[0][0]
 
     fork_name = f"rehearsal:{uuid.uuid4().hex[:12]}"
     t1 = time.perf_counter()
-    fork = g.copy(fork_name)
+    fork = copy(g, fork_name)
     try:
         t2 = time.perf_counter()
-        # Deleting a person's ports removes their gate, so no route can pass them.
-        fork.query(
-            """MATCH (p:Person) WHERE p.handle IN $h SET p.left_at = 'rehearsal'
-               WITH collect(p.handle) AS hs
-               MATCH (port:Port) WHERE port.person IN hs DETACH DELETE port""",
-            {"h": people},
-        )
-        after: dict[str, Flow] = flows(db, fork_name, list(before), workers)
+        take_off_stage(fork, people, "rehearsal")
+        after = flows(db, fork_name, list(before), workers)
         t3 = time.perf_counter()
     finally:
         fork.delete()
     t4 = time.perf_counter()
 
-    changes = [
-        Change(s, before[s], f.number, f.routes) for s, f in after.items() if f.number != before[s]
-    ]
-    changes.sort(key=lambda c: (c.after - c.before, c.after, c.system))
     return Rehearsal(
         people=people,
-        changes=changes,
+        changes=_changes(before, after),
         rerun=list(before),
-        total_systems=total,
+        total_systems=_total(g),
         timings_ms={
             "lookup": round((t1 - t0) * 1000, 1),
             "copy": round((t2 - t1) * 1000, 1),

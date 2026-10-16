@@ -49,9 +49,14 @@ def test_stage_for_billing(client):
     s = client.get("/api/systems/billing").json()
     assert s["understudy"] == 1
     assert [k["handle"] for k in s["knowers"]] == ["ana", "ben", "cara"]
-    assert s["approvers"] == [{"handle": "dev", "knows": False, "on_route": True}]
+    assert s["approvers"] == [
+        {"handle": "dev", "knows": False, "on_route": True, "critical": True, "off_stage": False}
+    ]
     assert len(s["routes"]) == 1 and s["routes"][0][-1] == "dev"
     assert sum(k["on_route"] for k in s["knowers"]) == 1
+    # Any of the three knowers could feed dev, so none of them is critical.
+    assert not any(k["critical"] for k in s["knowers"])
+    assert client.get("/api/systems").json()[0]["critical"] == 1
 
 
 def test_system_names_with_slashes(db, client):

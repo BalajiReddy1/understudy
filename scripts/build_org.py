@@ -13,7 +13,7 @@ from understudy.config import RAW, salt
 from understudy.db import connect, drop
 from understudy.derive.flow import build_flow_layer, write_org
 from understudy.derive.kubernetes import derive_org, load_aliases, load_owners, load_prs
-from understudy.engine.understudy import refresh
+from understudy.engine.refresh import refresh
 
 
 def main() -> None:
@@ -42,7 +42,7 @@ def main() -> None:
 
     results = refresh(db, args.graph)
     t3 = time.perf_counter()
-    print(f"max-flow and CARRIES for {len(results)} systems in {t3 - t2:.1f}s")
+    print(f"max-flow, CARRIES and CRITICAL for {len(results)} systems in {t3 - t2:.1f}s")
     report(g)
 
 

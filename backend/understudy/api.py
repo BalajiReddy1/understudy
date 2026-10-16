@@ -14,9 +14,9 @@ from pydantic import BaseModel, Field
 from redis.exceptions import ConnectionError as RedisConnectionError
 
 from .db import connect
+from .engine.refresh import refresh
 from .engine.rehearse import UnknownPeople, rehearse
 from .engine.stage import call_board, stage
-from .engine.understudy import refresh
 
 MAX_PEOPLE = 10
 

@@ -5,8 +5,9 @@ from nxflow import assert_valid_routes, nx_number, random_org
 
 from understudy.db import drop
 from understudy.derive.flow import build_flow_layer, write_org
+from understudy.engine.refresh import refresh
 from understudy.engine.rehearse import UnknownPeople, rehearse
-from understudy.engine.understudy import all_systems, refresh, understudy
+from understudy.engine.understudy import all_systems, understudy
 from understudy.sample import SAMPLE_NUMBERS, SAMPLE_ORG
 
 
