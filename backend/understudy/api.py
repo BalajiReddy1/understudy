@@ -7,6 +7,7 @@ uv run uvicorn understudy.api:app --port 8000
 
 import json
 import logging
+import mimetypes
 import os
 import queue
 import threading
@@ -43,7 +44,12 @@ log = logging.getLogger("understudy")
 # The landing page's seven-person org, built in FalkorDB on first use.
 SAMPLE_GRAPH = "sample"
 DIST = ROOT / "frontend" / "dist"
-Org = Literal["k8s", "sample"]
+# Python guesses types from the Windows registry, which can map .js to text/plain;
+# browsers refuse a module script served that way.
+mimetypes.add_type("text/javascript", ".js")
+mimetypes.add_type("text/css", ".css")
+mimetypes.add_type("image/svg+xml", ".svg")
+Org =Literal["k8s", "sample"]
 # Throwaway copies a crash could leave behind; dropped when the app starts.
 SCRATCH_PREFIXES = ("rehearsal:", "scratch:", "fix:")
 

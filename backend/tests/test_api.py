@@ -228,7 +228,10 @@ def test_the_built_frontend_is_served(db, tmp_path):
     with TestClient(create_app(GRAPH, db, static_dir=tmp_path)) as c:
         assert "Understudy" in c.get("/").text
         assert "Understudy" in c.get("/k8s").text  # client-side routes get index.html
-        assert c.get("/assets/app.js").text == "console.log(1)"
-        assert c.get("/favicon.svg").text == "<svg/>"
+        js = c.get("/assets/app.js")
+        assert js.text == "console.log(1)"
+        # Browsers refuse a module script with any other type, whatever the OS says.
+        assert js.headers["content-type"].startswith("text/javascript")
+        assert c.get("/favicon.svg").headers["content-type"].startswith("image/svg+xml")
         assert c.get("/api/nope").status_code == 404  # API paths never fall back
         assert "Understudy" in c.get("/../../etc/passwd").text  # no escaping the folder
