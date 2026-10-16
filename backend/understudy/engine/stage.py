@@ -25,8 +25,8 @@ RETURN s.name, s.understudy, knowers, approvers, critical, teams,
 
 
 def call_board(g: Graph) -> list[dict]:
-    """Riskiest first: lowest understudy number, then the most people who know the
-    system (those are the ones a headcount would wrongly call safe)."""
+    """Riskiest first: lowest understudy number, then the most people who know or
+    approve the system (those are the ones a headcount would wrongly call safe)."""
     rows = [
         {
             "name": name,
@@ -51,7 +51,9 @@ def call_board(g: Graph) -> list[dict]:
             inactive,
         ) in g.ro_query(BOARD).result_set
     ]
-    return sorted(rows, key=lambda r: (r["understudy"], -r["knowers"], r["name"]))
+    return sorted(
+        rows, key=lambda r: (r["understudy"], -(r["knowers"] + r["approvers"]), r["name"])
+    )
 
 
 def stage(g: Graph, system: str) -> dict | None:
