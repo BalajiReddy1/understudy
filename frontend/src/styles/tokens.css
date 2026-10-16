@@ -1,0 +1,38 @@
+/* The green-room identity, carried over from the design doc unchanged. */
+:root {
+  --page: oklch(1 0 0);
+  --green: oklch(0.79 0.13 146);
+  --green-ink: oklch(0.42 0.11 150);
+  --green-wash: oklch(0.965 0.025 146);
+  --ink: oklch(0.21 0.035 155);
+  --ink-soft: oklch(0.41 0.025 155);
+  --line: oklch(0.86 0.03 150);
+  --alarm: oklch(0.52 0.2 27);
+  --alarm-wash: oklch(0.96 0.03 27);
+  --off: oklch(0.72 0.012 155);
+  /* A second neutral for the workspace's side panels. */
+  --panel: oklch(0.985 0.008 150);
+
+  --display: "Big Shoulders Display", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --text: "Literata", Charter, "Iowan Old Style", Georgia, serif;
+  --mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+
+  --step--2: 0.75rem;
+  --step--1: 0.875rem;
+  --step-0: 1rem;
+  --step-1: 1.25rem;
+  --step-2: 1.6rem;
+  --step-3: clamp(2.25rem, 1.6rem + 2.4vw, 3.25rem);
+  --step-4: clamp(3.75rem, 2rem + 6.5vw, 6rem);
+
+  --gutter: clamp(1rem, 0.6rem + 2vw, 2.5rem);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --fast: 160ms;
+  --slow: 240ms;
+
+  --z-sticky: 10;
+  --z-overlay: 20;
+  --z-toast: 30;
+}
