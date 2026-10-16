@@ -1,4 +1,10 @@
-import { navigate } from '../lib/router'
+import { navigate, useLocation } from '../lib/router'
+
+const LINKS = [
+  ['/', 'Sample org'],
+  ['/k8s', 'Kubernetes'],
+  ['/proof', 'Proof'],
+]
 
 interface Props {
   /** The landing page has the name as its title, so the bar shows only the links. */
@@ -9,6 +15,7 @@ interface Props {
 }
 
 export function Header({ wordmark = true, session, onReset, onLeaveCopy }: Props) {
+  const { path } = useLocation()
   const go = (to: string) => (e: React.MouseEvent) => {
     e.preventDefault()
     navigate(to)
@@ -21,12 +28,11 @@ export function Header({ wordmark = true, session, onReset, onLeaveCopy }: Props
         </a>
       )}
       <nav aria-label="Main">
-        <a href="/" onClick={go('/')}>
-          Sample org
-        </a>
-        <a href="/k8s" onClick={go('/k8s')}>
-          Kubernetes
-        </a>
+        {LINKS.map(([to, label]) => (
+          <a key={to} href={to} onClick={go(to)} aria-current={path === to ? 'page' : undefined}>
+            {label}
+          </a>
+        ))}
         <a href="https://github.com/BalajiReddy1/understudy" target="_blank" rel="noreferrer">
           Code
         </a>

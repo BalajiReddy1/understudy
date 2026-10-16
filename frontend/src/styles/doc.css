@@ -1,0 +1,332 @@
+/* The reading pages: the green drench for the title, then a single column of plain
+   text on white, like a programme note. */
+
+.doc-head {
+  padding: clamp(2rem, 1rem + 3vw, 4rem) var(--gutter) clamp(2rem, 1rem + 2.5vw, 3.5rem);
+  background: var(--green);
+}
+
+.doc-head h1 {
+  max-width: 18ch;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: var(--step-4);
+  line-height: 0.92;
+}
+
+.doc-answer {
+  max-width: 62ch;
+  margin-top: 1.25rem;
+  font-size: var(--step-1);
+  line-height: 1.5;
+}
+
+.doc-head .skeleton-numbers {
+  max-width: 36rem;
+  height: 5rem;
+  margin-top: 1.25rem;
+  background: oklch(0.86 0.09 146);
+}
+
+.doc-section {
+  max-width: 50rem;
+  padding: clamp(2rem, 1.25rem + 2vw, 3rem) var(--gutter) 0;
+}
+
+.doc-section h2 {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: var(--step-3);
+  line-height: 1;
+}
+
+.doc-section > p {
+  max-width: 66ch;
+  margin-top: 0.85rem;
+}
+
+.doc-section:last-child {
+  padding-bottom: clamp(2.5rem, 1.5rem + 3vw, 4rem);
+}
+
+.count {
+  font-family: var(--mono);
+  font-size: 0.85em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-soft);
+}
+
+/* --- the four numbers ---------------------------------------------------------- */
+
+.doc-figures {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.5rem;
+  max-width: 62rem;
+  padding: clamp(1.5rem, 1rem + 2vw, 2.5rem) var(--gutter) 0;
+}
+
+.doc-figures > div {
+  padding-top: 0.75rem;
+  border-top: 2px solid var(--ink);
+}
+
+.doc-figures .figure {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: var(--step-3);
+  line-height: 1;
+}
+
+.doc-figures .figure span {
+  font-size: 0.5em;
+  color: var(--ink-soft);
+}
+
+.doc-figures p + p {
+  margin-top: 0.35rem;
+  font-size: var(--step--1);
+  line-height: 1.4;
+}
+
+/* --- lists and definitions ----------------------------------------------------- */
+
+.doc-list {
+  max-width: 66ch;
+  margin: 1rem 0 0;
+  padding-left: 1.25rem;
+}
+
+.doc-list > li + li {
+  margin-top: 0.85rem;
+}
+
+.doc-list ul {
+  margin: 0.4rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.doc-defs {
+  max-width: 66ch;
+  margin: 1rem 0 0;
+}
+
+.doc-defs dt {
+  margin-top: 1rem;
+  font-weight: 700;
+}
+
+.doc-defs dt:first-child {
+  margin-top: 0;
+}
+
+.doc-defs dd {
+  margin: 0.2rem 0 0;
+}
+
+/* --- the proof chart ------------------------------------------------------------ */
+
+.proof-chart {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.doc-section:has(.proof-chart) {
+  max-width: 62rem;
+}
+
+.proof-panel {
+  margin: 0;
+  min-width: 0;
+}
+
+/* Title and rho always on their own lines, so both plots start at the same height. */
+.proof-panel figcaption {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.proof-panel-title {
+  font-weight: 700;
+}
+
+.proof-rho {
+  font-family: var(--mono);
+  font-size: var(--step--1);
+}
+
+.proof-rho span {
+  color: var(--ink-soft);
+}
+
+.proof-plot {
+  position: relative;
+}
+
+.proof-plot svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  font-family: var(--mono);
+}
+
+.proof-grid line {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.proof-grid line.is-one {
+  stroke: var(--ink-soft);
+}
+
+.proof-grid text,
+.proof-axis text {
+  font-size: 11px;
+  fill: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.proof-axis .proof-axis-title {
+  font-size: 12px;
+  fill: var(--ink);
+}
+
+.proof-empty rect {
+  fill: var(--alarm-wash);
+}
+
+.proof-empty text {
+  font-size: 11px;
+  fill: var(--alarm);
+}
+
+.proof-dot {
+  cursor: default;
+  outline: none;
+}
+
+.proof-dot .hit {
+  fill: transparent;
+}
+
+.proof-dot .mark {
+  fill: var(--ink);
+  stroke: var(--page);
+  stroke-width: 2;
+  transition: r var(--fast) var(--ease);
+}
+
+.proof-dot.is-active .mark {
+  fill: var(--green-ink);
+}
+
+.proof-dot:focus-visible .hit {
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+
+.proof-tip {
+  position: absolute;
+  z-index: var(--z-overlay);
+  width: min(17rem, 80vw);
+  margin: 0.9rem 0 0 0.9rem;
+  padding: 0.65rem 0.8rem;
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius-sm);
+  background: var(--page);
+  font-size: var(--step--1);
+  line-height: 1.4;
+  pointer-events: none;
+}
+
+.proof-tip.is-left {
+  transform: translateX(-100%);
+  margin-left: -0.9rem;
+}
+
+.proof-tip p + p {
+  margin-top: 0.3rem;
+}
+
+.proof-tip-value {
+  font-weight: 700;
+  font-size: var(--step-0);
+}
+
+.proof-tip-system {
+  font-family: var(--mono);
+  font-size: var(--step--2);
+  overflow-wrap: anywhere;
+}
+
+/* --- the table ------------------------------------------------------------------- */
+
+.doc-table-wrap {
+  margin-top: 1rem;
+}
+
+.doc-table-wrap summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.doc-table-scroll {
+  margin-top: 0.75rem;
+  overflow-x: auto;
+}
+
+.doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--step--1);
+}
+
+.doc-table th,
+.doc-table td {
+  padding: 0.4rem 0.6rem 0.4rem 0;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.doc-table th {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.doc-table .mono {
+  font-family: var(--mono);
+  font-size: var(--step--2);
+  overflow-wrap: anywhere;
+}
+
+.doc-table .num {
+  font-family: var(--mono);
+  font-size: var(--step--2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.doc-table tr.is-out td {
+  color: var(--ink-soft);
+}
+
+.doc-links {
+  margin-top: 1rem;
+  font-size: var(--step--1);
+}
+
+@media (max-width: 860px) {
+  .doc-figures {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .proof-chart {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,5 +1,6 @@
 import { Header } from './components/Header'
 import { Landing } from './pages/Landing'
+import { Proof } from './pages/Proof'
 import { Workspace } from './pages/Workspace'
 import { navigate, useLocation } from './lib/router'
 
@@ -7,6 +8,7 @@ export function App() {
   const { path, params } = useLocation()
   if (path === '/') return <Landing />
   if (path === '/k8s') return <Workspace params={params} />
+  if (path === '/proof') return <Proof />
   return (
     <div className="landing">
       <Header />

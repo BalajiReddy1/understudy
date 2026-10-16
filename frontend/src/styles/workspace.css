@@ -22,7 +22,8 @@
 
 .site-head nav {
   display: flex;
-  gap: 1.25rem;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
 }
 
 .site-head nav a {
@@ -34,6 +35,11 @@
 
 .site-head nav a:hover {
   text-decoration: underline;
+}
+
+.site-head nav a[aria-current='page'] {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
 }
 
 .copy-status {

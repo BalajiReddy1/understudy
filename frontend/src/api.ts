@@ -152,7 +152,56 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 const systemPath = (name: string) => name.split('/').map(encodeURIComponent).join('/')
 
+/** A statistic with its 95% interval from resampling whole departures. */
+export interface Estimate {
+  value: number | null
+  low: number | null
+  high: number | null
+  resamples: number
+}
+
+export interface ProofUnit {
+  person: string
+  left_at: string
+  system: string
+  understudy_before: number
+  understudy_after: number
+  knowers_before: number
+  knowers_after: number
+  prs_before: number
+  prs_after: number
+  hours_before: number | null
+  hours_after: number | null
+  project_ratio: number
+  /** Slowdown relative to the whole project; null when the system wasn't measurable. */
+  slowdown: number | null
+  reason: string | null
+}
+
+export interface ProofEvent {
+  person: string | null
+  left_at: string
+  prs_before: number
+  reason: string | null
+}
+
+/** data/proof.json, written by scripts/backtest.py. */
+export interface Proof {
+  generated_at: string
+  data: { prs: number; first_merge: string; last_merge: string }
+  method: Record<string, number | string>
+  summary: {
+    departures: number
+    systems: number
+    rho: { understudy: Estimate; knowers: Estimate }
+    groups: { low: Estimate & { n: number }; high: Estimate & { n: number } }
+  }
+  events: ProofEvent[]
+  units: ProofUnit[]
+}
+
 export const api = {
+  proof: () => request<Proof>('/api/proof'),
   board: (org: Org, session?: string | null) =>
     request<BoardRow[]>(`/api/systems${query({ org, session })}`),
   stage: (org: Org, name: string, session?: string | null) =>
