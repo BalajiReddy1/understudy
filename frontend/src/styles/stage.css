@@ -1,0 +1,149 @@
+/* The stage: an SVG drawn in four fixed columns. Colour carries state only. */
+
+.stage-svg {
+  display: block;
+  width: 100%;
+  min-width: 560px;
+  height: auto;
+  font-family: var(--mono);
+}
+
+.stage-columns text {
+  font-size: 11px;
+  fill: var(--ink-soft);
+  text-anchor: middle;
+}
+
+.edge {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1.25;
+  transition:
+    opacity var(--slow) var(--ease),
+    stroke var(--slow) var(--ease);
+}
+
+.edge.is-gone {
+  opacity: 0.25;
+  stroke-dasharray: 4 4;
+}
+
+.edge-route {
+  stroke: var(--green-ink);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+}
+
+.stage-node text {
+  text-anchor: middle;
+  fill: var(--ink);
+  font-size: 13px;
+  pointer-events: none;
+}
+
+.stage-node .node-lead {
+  font-size: 10px;
+  fill: var(--ink-soft);
+}
+
+.stage-node .node-tail {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.stage-system rect {
+  fill: var(--green);
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+
+.stage-system .node-lead {
+  fill: var(--ink);
+}
+
+.stage-team rect {
+  fill: var(--page);
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+
+.stage-person rect:not(.halo) {
+  fill: var(--page);
+  stroke: var(--line);
+  stroke-width: 1.25;
+  transition:
+    fill var(--fast) var(--ease),
+    stroke var(--fast) var(--ease),
+    stroke-width var(--fast) var(--ease);
+}
+
+.stage-person .halo {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 2.5;
+  transition: stroke var(--fast) var(--ease);
+}
+
+.stage-person[role='button'] {
+  cursor: pointer;
+  outline: none;
+}
+
+.stage-person[role='button']:hover rect:not(.halo) {
+  stroke: var(--green-ink);
+}
+
+.stage-person[role='button']:focus-visible .halo {
+  stroke: var(--ink);
+}
+
+.stage-person.is-route rect:not(.halo) {
+  fill: var(--green-wash);
+  stroke: var(--green-ink);
+  stroke-width: 1.6;
+}
+
+.stage-person.is-critical rect:not(.halo) {
+  stroke: var(--ink);
+  stroke-width: 2.6;
+}
+
+.stage-person.is-gone rect:not(.halo) {
+  fill: var(--page);
+  stroke: var(--off);
+  stroke-dasharray: 4 3;
+  stroke-width: 1.25;
+}
+
+.stage-person.is-gone text {
+  fill: var(--off);
+  text-decoration: line-through;
+}
+
+.stage-person.is-selected rect:not(.halo) {
+  fill: var(--ink);
+  stroke: var(--ink);
+}
+
+.stage-person.is-selected text {
+  fill: var(--page);
+}
+
+.stage-person.is-highlight .halo {
+  stroke: var(--green);
+  stroke-width: 3.5;
+}
+
+.knows-dot {
+  fill: var(--green-ink);
+}
+
+.stage-person.is-selected .knows-dot {
+  fill: var(--green);
+}
+
+.stage-more {
+  text-anchor: middle;
+  font-size: 11px;
+  fill: var(--ink-soft);
+}
