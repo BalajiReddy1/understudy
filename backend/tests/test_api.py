@@ -202,3 +202,33 @@ def test_start_up_clears_leftover_copies(db):
     with TestClient(create_app(GRAPH, db)):
         left = [n for n in db.list_graphs() if n.endswith(":old")]
     assert left == []
+
+
+# --- the sample org and the built frontend --------------------------------------------
+
+
+def test_the_sample_org_runs_on_falkordb(db):
+    drop(db, "test:sample-api")
+    with TestClient(create_app(GRAPH, db, sample="test:sample-api")) as c:
+        board = {r["name"]: r["understudy"] for r in c.get("/api/systems?org=sample").json()}
+        assert board == SAMPLE_NUMBERS
+        assert c.get("/api/systems/billing?org=sample").json()["understudy"] == 1
+        r = c.post("/api/rehearse?org=sample", json={"people": ["dev"]}).json()
+        assert {x["system"] for x in r["changes"]} == {"billing", "ledger", "auth"}
+        assert c.get("/api/systems?org=sample&session=abc").status_code == 422
+        assert c.get("/api/systems?org=nope").status_code == 422
+    drop(db, "test:sample-api")
+
+
+def test_the_built_frontend_is_served(db, tmp_path):
+    (tmp_path / "assets").mkdir()
+    (tmp_path / "index.html").write_text("<!doctype html><title>Understudy</title>")
+    (tmp_path / "assets" / "app.js").write_text("console.log(1)")
+    (tmp_path / "favicon.svg").write_text("<svg/>")
+    with TestClient(create_app(GRAPH, db, static_dir=tmp_path)) as c:
+        assert "Understudy" in c.get("/").text
+        assert "Understudy" in c.get("/k8s").text  # client-side routes get index.html
+        assert c.get("/assets/app.js").text == "console.log(1)"
+        assert c.get("/favicon.svg").text == "<svg/>"
+        assert c.get("/api/nope").status_code == 404  # API paths never fall back
+        assert "Understudy" in c.get("/../../etc/passwd").text  # no escaping the folder

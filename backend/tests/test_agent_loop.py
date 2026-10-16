@@ -261,3 +261,26 @@ def test_a_short_rate_limit_is_waited_out(ctx):
     reply = ask("what's riskiest?", ctx, client=model, emit=events.append)
     assert reply.model == "openai/gpt-oss-120b"  # waited, didn't drop to the small model
     assert any("waiting" in e.get("text", "") for e in events)
+
+
+def test_citations():
+    from understudy.agent.loop import Reply, citations
+
+    data = {
+        "system": "pkg/kubelet/apis/config",
+        "systems": [{"name": "pkg/kubelet"}],
+        "decisions": [
+            {"kep": 2535, "title": "Ensure Secret Pulled Images", "url": "https://x/2535"}
+        ],
+    }
+    text = (
+        "pkg/kubelet/apis/config scores 1; contributor-ab12 is critical. "
+        "KEP-2535 shaped it, and contributor-ab12 approved it."
+    )
+    cites = citations(Reply(text, "path", True, [], None, None, [Result("ok", "", data)]))
+    # pkg/kubelet is in the results but only appears inside a longer name, so it isn't cited.
+    assert cites["systems"] == ["pkg/kubelet/apis/config"]
+    assert cites["people"] == ["contributor-ab12"]
+    assert cites["keps"] == [
+        {"number": 2535, "title": "Ensure Secret Pulled Images", "url": "https://x/2535"}
+    ]

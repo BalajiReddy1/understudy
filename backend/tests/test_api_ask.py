@@ -84,13 +84,16 @@ def test_the_question_limit(base):
 
 
 def test_the_stream(base):
-    with app_with(
-        base,
-        [
-            message(calls=[tool_call(1, "understudies", {"system": "billing"})]),
-            message("billing's number is 1."),
-        ],
-    ) as c, c.stream("POST", "/api/ask/stream", json={"question": "billing?"}) as r:
+    with (
+        app_with(
+            base,
+            [
+                message(calls=[tool_call(1, "understudies", {"system": "billing"})]),
+                message("billing's number is 1."),
+            ],
+        ) as c,
+        c.stream("POST", "/api/ask/stream", json={"question": "billing?"}) as r,
+    ):
         assert r.headers["content-type"].startswith("text/event-stream")
         events = [json.loads(line[6:]) for line in r.iter_lines() if line.startswith("data: ")]
     assert [e["type"] for e in events] == ["tool", "answer"]

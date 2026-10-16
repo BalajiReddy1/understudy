@@ -14,27 +14,36 @@ import time
 from collections import defaultdict, deque
 from contextlib import asynccontextmanager
 from dataclasses import asdict
+from pathlib import Path
 from typing import Literal
 
 from falkordb import FalkorDB
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from redis.exceptions import ConnectionError as RedisConnectionError
 
 from .agent import memory
-from .agent.loop import Reply, ask
+from .agent.loop import Reply, ask, citations
 from .agent.tools import Context
 from .agent.trace import Recorder, TracedDB
+from .config import ROOT
 from .db import connect
+from .derive.flow import build_flow_layer, write_org
 from .engine.fixes import FixRejected, UnknownSystem, apply_fix, checked_fix, propose
 from .engine.refresh import refresh
 from .engine.rehearse import UnknownPeople, depart, rehearse
 from .engine.sessions import Session, SessionGone, Sessions
 from .engine.stage import call_board, stage
+from .sample import SAMPLE_ORG
 
 MAX_PEOPLE = 10
 log = logging.getLogger("understudy")
+# The landing page's seven-person org, built in FalkorDB on first use.
+SAMPLE_GRAPH = "sample"
+DIST = ROOT / "frontend" / "dist"
+Org = Literal["k8s", "sample"]
 # Throwaway copies a crash could leave behind; dropped when the app starts.
 SCRATCH_PREFIXES = ("rehearsal:", "scratch:", "fix:")
 
@@ -81,6 +90,8 @@ def create_app(
     db: FalkorDB | None = None,
     ask_client=None,
     ask_limit: tuple[int, float] = (6, 600),
+    sample: str = SAMPLE_GRAPH,
+    static_dir: Path | None = DIST,
 ) -> FastAPI:
     graph = graph or os.environ.get("UNDERSTUDY_GRAPH", "org")
     # The client connects as soon as it's made, so it's made on first use: if FalkorDB
@@ -95,6 +106,7 @@ def create_app(
 
     sessions = Sessions(get_db, graph)
     limiter = AskLimiter(*ask_limit)
+    sample_lock = threading.Lock()
 
     def built() -> bool:
         return graph in get_db().list_graphs()
@@ -151,8 +163,22 @@ def create_app(
                 503, f"The graph '{graph}' hasn't been built yet. Run scripts/build_org.py."
             )
 
-    def target(session: str | None) -> str:
-        """The graph a request reads: the visitor's session copy, or the base graph."""
+    def sample_graph() -> str:
+        with sample_lock:
+            if sample not in get_db().list_graphs():
+                g = get_db().select_graph(sample)
+                write_org(g, SAMPLE_ORG)
+                build_flow_layer(g)
+                refresh(get_db(), sample)
+        return sample
+
+    def target(session: str | None, org: Org = "k8s") -> str:
+        """The graph a request reads: the sample org, the visitor's session copy of the
+        Kubernetes org, or the Kubernetes org itself."""
+        if org == "sample":
+            if session:
+                raise HTTPException(422, "Sessions are for the Kubernetes org only.")
+            return sample_graph()
         check_built()
         return sessions.get(session).graph if session else graph
 
@@ -164,24 +190,26 @@ def create_app(
         return {"ok": True, "graph": graph, "systems": systems}
 
     @app.get("/api/systems")
-    def systems(session: str | None = None) -> list[dict]:
-        return call_board(get_db().select_graph(target(session)))
+    def systems(session: str | None = None, org: Org = "k8s") -> list[dict]:
+        return call_board(get_db().select_graph(target(session, org)))
 
     @app.get("/api/systems/{name:path}")
-    def system(name: str, session: str | None = None) -> dict:
-        found = stage(get_db().select_graph(target(session)), name)
+    def system(name: str, session: str | None = None, org: Org = "k8s") -> dict:
+        found = stage(get_db().select_graph(target(session, org)), name)
         if found is None:
             raise HTTPException(404, f"No system called '{name}'. GET /api/systems lists them.")
         return found
 
     @app.post("/api/rehearse")
-    def rehearse_departure(body: PeopleRequest, session: str | None = None) -> dict:
-        return asdict(rehearse(get_db(), target(session), body.people))
+    def rehearse_departure(
+        body: PeopleRequest, session: str | None = None, org: Org = "k8s"
+    ) -> dict:
+        return asdict(rehearse(get_db(), target(session, org), body.people))
 
     @app.get("/api/fixes/{name:path}")
-    def fixes(name: str, session: str | None = None) -> dict:
+    def fixes(name: str, session: str | None = None, org: Org = "k8s") -> dict:
         try:
-            return asdict(propose(get_db(), target(session), name))
+            return asdict(propose(get_db(), target(session, org), name))
         except UnknownSystem as e:
             raise HTTPException(404, f"No system called '{name}'.") from e
 
@@ -256,6 +284,7 @@ def create_app(
             "model": reply.model,
             "session": current["id"],
             "steps": [asdict(s) for s in reply.steps],
+            "cites": citations(reply),
         }
 
     def check_limit(request: Request) -> None:
@@ -312,6 +341,21 @@ def create_app(
     def end_session(session_id: str) -> dict:
         sessions.end(session_id)
         return {"ok": True}
+
+    # --- the built frontend --------------------------------------------------------
+    # Mounted last so every /api route wins. Unknown paths get index.html, because the
+    # frontend routes on the client.
+    if static_dir is not None and (static_dir / "index.html").exists():
+        app.mount("/assets", StaticFiles(directory=static_dir / "assets"), name="assets")
+
+        @app.get("/{path:path}", include_in_schema=False)
+        def frontend(path: str) -> FileResponse:
+            if path.startswith("api/"):
+                raise HTTPException(404, "No such API route.")
+            file = (static_dir / path).resolve()
+            if path and file.is_file() and static_dir.resolve() in file.parents:
+                return FileResponse(file)
+            return FileResponse(static_dir / "index.html")
 
     return app
 

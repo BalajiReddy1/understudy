@@ -234,6 +234,38 @@ def _fallback(results: list[Result]) -> str:
     return " ".join(out[-3:]) or "The graph has nothing to say about that yet."
 
 
+def citations(reply: "Reply") -> dict:
+    """The systems, people and KEPs the reply names, in the order it names them, so the
+    UI can link each one to its place on the stage. Only things a tool returned count."""
+    text = reply.text
+    systems: set[str] = set()
+    keps: dict[int, dict] = {}
+
+    def walk(v: Any) -> None:
+        if isinstance(v, dict):
+            if isinstance(v.get("kep"), int) and v.get("url"):
+                keps[v["kep"]] = {"number": v["kep"], "title": v.get("title"), "url": v["url"]}
+            for k, x in v.items():
+                if k in ("system", "name") and isinstance(x, str):
+                    systems.add(x)
+                walk(x)
+        elif isinstance(v, list):
+            for x in v:
+                walk(x)
+
+    for r in reply.results:
+        walk(r.data)
+    # A name counts only as a whole: pkg/kubelet isn't cited by pkg/kubelet/cm.
+    named = [
+        (m.start(), s) for s in systems if (m := re.search(re.escape(s) + r"(?![\w/-])", text))
+    ]
+    return {
+        "systems": [s for _, s in sorted(named)],
+        "people": list(dict.fromkeys(PSEUDONYM.findall(text))),
+        "keps": [keps[int(n)] for n in dict.fromkeys(KEP.findall(text)) if int(n) in keps],
+    }
+
+
 # --- running tools ------------------------------------------------------------------
 
 
@@ -392,7 +424,9 @@ def ask(
     client = client if client is not None else _client()
     if client is None:
         results, steps = route(question, ctx, emit)
-        return Reply(_fallback(results), _kind(results), False, steps, None, "no model key")
+        return Reply(
+            _fallback(results), _kind(results), False, steps, None, "no model key", results
+        )
 
     messages = [{"role": "system", "content": SYSTEM}]
     for turn in (history or [])[-6:]:
@@ -490,7 +524,7 @@ def ask(
         more, more_steps = route(question, ctx, emit) if not results else ([], [])
         results += more
         steps += more_steps
-        return Reply(_fallback(results), _kind(results), False, steps, None, note)
+        return Reply(_fallback(results), _kind(results), False, steps, None, note, results)
 
     problem = "the model gave no answer" if not text else check(text, results, question)
     if problem:
