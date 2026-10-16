@@ -1,0 +1,913 @@
+{
+ "generated_at": "2026-10-16T16:16:36+00:00",
+ "data": {
+  "prs": 9187,
+  "first_merge": "2024-01-01",
+  "last_merge": "2026-10-14"
+ },
+ "method": {
+  "window_days": 90,
+  "grace_days": 60,
+  "min_prs": 5,
+  "min_active_prs": 3,
+  "low_group": "understudy number 1 or below after the departure",
+  "resamples": 2000,
+  "seed": 20261016
+ },
+ "summary": {
+  "departures": 7,
+  "systems": 23,
+  "rho": {
+   "understudy": {
+    "value": -0.236,
+    "low": -0.603,
+    "high": 0.797,
+    "resamples": 1999
+   },
+   "knowers": {
+    "value": -0.041,
+    "low": -0.737,
+    "high": 0.517,
+    "resamples": 2000
+   }
+  },
+  "groups": {
+   "low": {
+    "n": 0,
+    "value": null,
+    "low": null,
+    "high": null,
+    "resamples": 0
+   },
+   "high": {
+    "n": 23,
+    "value": 0.771,
+    "low": 0.716,
+    "high": 2.161,
+    "resamples": 2000
+   }
+  }
+ },
+ "events": [
+  {
+   "person": "contributor-4b05f",
+   "left_at": "2024-01-23",
+   "prs_before": 2,
+   "reason": "fewer than 3 PRs in the 18 months before"
+  },
+  {
+   "person": "contributor-d8681",
+   "left_at": "2024-03-07",
+   "prs_before": 2,
+   "reason": "fewer than 3 PRs in the 18 months before"
+  },
+  {
+   "person": "contributor-a058a",
+   "left_at": "2024-04-18",
+   "prs_before": 2,
+   "reason": "fewer than 3 PRs in the 18 months before"
+  },
+  {
+   "person": "contributor-cf454",
+   "left_at": "2024-04-23",
+   "prs_before": 0,
+   "reason": "fewer than 3 PRs in the 18 months before"
+  },
+  {
+   "person": null,
+   "left_at": "2024-04-23",
+   "prs_before": 0,
+   "reason": "fewer than 3 PRs in the 18 months before"
+  },
+  {
+   "person": null,
+   "left_at": "2024-05-16",
+   "prs_before": 0,
+   "reason": "fewer than 3 PRs in the 18 months before"
+  },
+  {
+   "person": "contributor-7d575",
+   "left_at": "2024-05-31",
+   "prs_before": 5,
+   "reason": null
+  },
+  {
+   "person": "contributor-89695",
+   "left_at": "2024-06-07",
+   "prs_before": 2,
+   "reason": "fewer than 3 PRs in the 18 months before"
+  },
+  {
+   "person": null,
+   "left_at": "2024-06-17",
+   "prs_before": 0,
+   "reason": "fewer than 3 PRs in the 18 months before"
+  },
+  {
+   "person": "contributor-280fb",
+   "left_at": "2024-06-24",
+   "prs_before": 2,
+   "reason": "fewer than 3 PRs in the 18 months before"
+  },
+  {
+   "person": "contributor-68f96",
+   "left_at": "2024-06-25",
+   "prs_before": 1,
+   "reason": "fewer than 3 PRs in the 18 months before"
+  },
+  {
+   "person": "contributor-9d940",
+   "left_at": "2024-09-20",
+   "prs_before": 2,
+   "reason": "fewer than 3 PRs in the 18 months before"
+  },
+  {
+   "person": "contributor-753fa",
+   "left_at": "2024-10-23",
+   "prs_before": 3,
+   "reason": "knew and approved no system in the graph that day"
+  },
+  {
+   "person": "contributor-75347",
+   "left_at": "2024-10-23",
+   "prs_before": 202,
+   "reason": "still active in the 90 days after"
+  },
+  {
+   "person": "contributor-a134a",
+   "left_at": "2024-11-07",
+   "prs_before": 220,
+   "reason": "still active in the 90 days after"
+  },
+  {
+   "person": "contributor-54ac9",
+   "left_at": "2024-12-16",
+   "prs_before": 4,
+   "reason": null
+  },
+  {
+   "person": "contributor-1961d",
+   "left_at": "2025-02-13",
+   "prs_before": 2,
+   "reason": "fewer than 3 PRs in the 18 months before"
+  },
+  {
+   "person": "contributor-608e4",
+   "left_at": "2025-03-04",
+   "prs_before": 7,
+   "reason": null
+  },
+  {
+   "person": "contributor-5745f",
+   "left_at": "2025-04-11",
+   "prs_before": 2,
+   "reason": "fewer than 3 PRs in the 18 months before"
+  },
+  {
+   "person": null,
+   "left_at": "2025-05-06",
+   "prs_before": 0,
+   "reason": "fewer than 3 PRs in the 18 months before"
+  },
+  {
+   "person": null,
+   "left_at": "2025-05-06",
+   "prs_before": 0,
+   "reason": "fewer than 3 PRs in the 18 months before"
+  },
+  {
+   "person": "contributor-6b731",
+   "left_at": "2025-07-19",
+   "prs_before": 204,
+   "reason": null
+  },
+  {
+   "person": "contributor-c54b6",
+   "left_at": "2025-08-27",
+   "prs_before": 11,
+   "reason": null
+  },
+  {
+   "person": "contributor-66445",
+   "left_at": "2025-08-28",
+   "prs_before": 48,
+   "reason": null
+  },
+  {
+   "person": "contributor-d9d3d",
+   "left_at": "2025-10-01",
+   "prs_before": 8,
+   "reason": null
+  },
+  {
+   "person": null,
+   "left_at": "2025-10-08",
+   "prs_before": 0,
+   "reason": "fewer than 3 PRs in the 18 months before"
+  },
+  {
+   "person": null,
+   "left_at": "2025-10-08",
+   "prs_before": 0,
+   "reason": "fewer than 3 PRs in the 18 months before"
+  },
+  {
+   "person": null,
+   "left_at": "2025-10-24",
+   "prs_before": 0,
+   "reason": "fewer than 3 PRs in the 18 months before"
+  },
+  {
+   "person": "contributor-a5b37",
+   "left_at": "2025-11-06",
+   "prs_before": 3,
+   "reason": null
+  },
+  {
+   "person": "contributor-aee22",
+   "left_at": "2025-12-20",
+   "prs_before": 861,
+   "reason": "still active in the 90 days after"
+  },
+  {
+   "person": "contributor-925ef",
+   "left_at": "2026-02-05",
+   "prs_before": 2,
+   "reason": "fewer than 3 PRs in the 18 months before"
+  },
+  {
+   "person": "contributor-f7baa",
+   "left_at": "2026-03-26",
+   "prs_before": 3,
+   "reason": null
+  },
+  {
+   "person": "contributor-621da",
+   "left_at": "2026-08-26",
+   "prs_before": 14,
+   "reason": "too recent to see 90 days after"
+  },
+  {
+   "person": "contributor-df2c4",
+   "left_at": "2026-08-27",
+   "prs_before": 1,
+   "reason": "fewer than 3 PRs in the 18 months before"
+  },
+  {
+   "person": "contributor-a7ab0",
+   "left_at": "2026-09-30",
+   "prs_before": 62,
+   "reason": "too recent to see 90 days after"
+  },
+  {
+   "person": "contributor-024ec",
+   "left_at": "2026-10-03",
+   "prs_before": 39,
+   "reason": "too recent to see 90 days after"
+  },
+  {
+   "person": "contributor-c520b",
+   "left_at": "2026-10-05",
+   "prs_before": 7,
+   "reason": "too recent to see 90 days after"
+  },
+  {
+   "person": null,
+   "left_at": "2026-10-14",
+   "prs_before": 0,
+   "reason": "fewer than 3 PRs in the 18 months before"
+  },
+  {
+   "person": null,
+   "left_at": "2026-10-14",
+   "prs_before": 0,
+   "reason": "fewer than 3 PRs in the 18 months before"
+  }
+ ],
+ "units": [
+  {
+   "person": "contributor-7d575",
+   "left_at": "2024-05-31",
+   "system": "staging/src/k8s.io/kubectl",
+   "understudy_before": 5,
+   "understudy_after": 5,
+   "knowers_before": 35,
+   "knowers_after": 35,
+   "prs_before": 38,
+   "prs_after": 40,
+   "hours_before": 5.37,
+   "hours_after": 3.06,
+   "project_ratio": 0.7395,
+   "slowdown": 0.771,
+   "reason": null
+  },
+  {
+   "person": "contributor-54ac9",
+   "left_at": "2024-12-16",
+   "system": "staging/src/k8s.io/apiserver/pkg/features",
+   "understudy_before": 19,
+   "understudy_after": 19,
+   "knowers_before": 21,
+   "knowers_after": 21,
+   "prs_before": 11,
+   "prs_after": 15,
+   "hours_before": 7.35,
+   "hours_after": 29.09,
+   "project_ratio": 1.1872,
+   "slowdown": 3.3361,
+   "reason": null
+  },
+  {
+   "person": "contributor-608e4",
+   "left_at": "2025-03-04",
+   "system": "pkg/proxy",
+   "understudy_before": 4,
+   "understudy_after": 4,
+   "knowers_before": 16,
+   "knowers_after": 16,
+   "prs_before": 18,
+   "prs_after": 14,
+   "hours_before": 5.9,
+   "hours_after": 10.35,
+   "project_ratio": 0.811,
+   "slowdown": 2.1614,
+   "reason": null
+  },
+  {
+   "person": "contributor-608e4",
+   "left_at": "2025-03-04",
+   "system": "pkg/proxy/iptables",
+   "understudy_before": 3,
+   "understudy_after": 3,
+   "knowers_before": 3,
+   "knowers_after": 3,
+   "prs_before": 5,
+   "prs_after": 4,
+   "hours_before": 11.74,
+   "hours_after": 9.94,
+   "project_ratio": 0.811,
+   "slowdown": null,
+   "reason": "fewer than 5 PRs in a window"
+  },
+  {
+   "person": "contributor-608e4",
+   "left_at": "2025-03-04",
+   "system": "pkg/proxy/ipvs",
+   "understudy_before": 3,
+   "understudy_after": 3,
+   "knowers_before": 5,
+   "knowers_after": 5,
+   "prs_before": 4,
+   "prs_after": 4,
+   "hours_before": 46.51,
+   "hours_after": 9.94,
+   "project_ratio": 0.811,
+   "slowdown": null,
+   "reason": "fewer than 5 PRs in a window"
+  },
+  {
+   "person": "contributor-608e4",
+   "left_at": "2025-03-04",
+   "system": "cmd/kube-proxy",
+   "understudy_before": 4,
+   "understudy_after": 4,
+   "knowers_before": 6,
+   "knowers_after": 6,
+   "prs_before": 5,
+   "prs_after": 5,
+   "hours_before": 10.62,
+   "hours_after": 6.33,
+   "project_ratio": 0.811,
+   "slowdown": 0.7346,
+   "reason": null
+  },
+  {
+   "person": "contributor-6b731",
+   "left_at": "2025-07-19",
+   "system": "pkg/api/pod",
+   "understudy_before": 4,
+   "understudy_after": 4,
+   "knowers_before": 20,
+   "knowers_after": 19,
+   "prs_before": 8,
+   "prs_after": 3,
+   "hours_before": 15.38,
+   "hours_after": 8.71,
+   "project_ratio": 1.5958,
+   "slowdown": null,
+   "reason": "fewer than 5 PRs in a window"
+  },
+  {
+   "person": "contributor-6b731",
+   "left_at": "2025-07-19",
+   "system": "staging/src/k8s.io/apiserver",
+   "understudy_before": 4,
+   "understudy_after": 4,
+   "knowers_before": 48,
+   "knowers_after": 47,
+   "prs_before": 50,
+   "prs_after": 27,
+   "hours_before": 2.72,
+   "hours_after": 16.6,
+   "project_ratio": 1.5958,
+   "slowdown": 3.8226,
+   "reason": null
+  },
+  {
+   "person": "contributor-6b731",
+   "left_at": "2025-07-19",
+   "system": "pkg/apis/resource",
+   "understudy_before": 3,
+   "understudy_after": 3,
+   "knowers_before": 14,
+   "knowers_after": 13,
+   "prs_before": 5,
+   "prs_after": 26,
+   "hours_before": 5.85,
+   "hours_after": 26.34,
+   "project_ratio": 1.5958,
+   "slowdown": 2.8199,
+   "reason": null
+  },
+  {
+   "person": "contributor-6b731",
+   "left_at": "2025-07-19",
+   "system": "pkg/volume",
+   "understudy_before": 5,
+   "understudy_after": 5,
+   "knowers_before": 28,
+   "knowers_after": 27,
+   "prs_before": 22,
+   "prs_after": 17,
+   "hours_before": 8.66,
+   "hours_after": 6.96,
+   "project_ratio": 1.5958,
+   "slowdown": 0.5036,
+   "reason": null
+  },
+  {
+   "person": "contributor-6b731",
+   "left_at": "2025-07-19",
+   "system": "staging/src/k8s.io/apiserver/pkg/features",
+   "understudy_before": 21,
+   "understudy_after": 20,
+   "knowers_before": 24,
+   "knowers_after": 23,
+   "prs_before": 16,
+   "prs_after": 3,
+   "hours_before": 10.62,
+   "hours_after": 130.42,
+   "project_ratio": 1.5958,
+   "slowdown": null,
+   "reason": "fewer than 5 PRs in a window"
+  },
+  {
+   "person": "contributor-6b731",
+   "left_at": "2025-07-19",
+   "system": "pkg/apis/core",
+   "understudy_before": 4,
+   "understudy_after": 4,
+   "knowers_before": 25,
+   "knowers_after": 24,
+   "prs_before": 7,
+   "prs_after": 7,
+   "hours_before": 10.73,
+   "hours_after": 8.71,
+   "project_ratio": 1.5958,
+   "slowdown": 0.5082,
+   "reason": null
+  },
+  {
+   "person": "contributor-6b731",
+   "left_at": "2025-07-19",
+   "system": "plugin/pkg/auth/authorizer",
+   "understudy_before": 2,
+   "understudy_after": 2,
+   "knowers_before": 12,
+   "knowers_after": 11,
+   "prs_before": 3,
+   "prs_after": 4,
+   "hours_before": 7.79,
+   "hours_after": 38.19,
+   "project_ratio": 1.5958,
+   "slowdown": null,
+   "reason": "fewer than 5 PRs in a window"
+  },
+  {
+   "person": "contributor-6b731",
+   "left_at": "2025-07-19",
+   "system": "cmd/kube-controller-manager",
+   "understudy_before": 5,
+   "understudy_after": 5,
+   "knowers_before": 20,
+   "knowers_after": 19,
+   "prs_before": 4,
+   "prs_after": 12,
+   "hours_before": 11.96,
+   "hours_after": 10.51,
+   "project_ratio": 1.5958,
+   "slowdown": null,
+   "reason": "fewer than 5 PRs in a window"
+  },
+  {
+   "person": "contributor-6b731",
+   "left_at": "2025-07-19",
+   "system": "pkg/kubelet/server",
+   "understudy_before": 2,
+   "understudy_after": 2,
+   "knowers_before": 15,
+   "knowers_after": 14,
+   "prs_before": 3,
+   "prs_after": 5,
+   "hours_before": 33.46,
+   "hours_after": 7.79,
+   "project_ratio": 1.5958,
+   "slowdown": null,
+   "reason": "fewer than 5 PRs in a window"
+  },
+  {
+   "person": "contributor-6b731",
+   "left_at": "2025-07-19",
+   "system": "pkg/registry",
+   "understudy_before": 3,
+   "understudy_after": 3,
+   "knowers_before": 23,
+   "knowers_after": 22,
+   "prs_before": 23,
+   "prs_after": 38,
+   "hours_before": 14.91,
+   "hours_after": 24.37,
+   "project_ratio": 1.5958,
+   "slowdown": 1.0237,
+   "reason": null
+  },
+  {
+   "person": "contributor-6b731",
+   "left_at": "2025-07-19",
+   "system": "staging/src/k8s.io/client-go",
+   "understudy_before": 6,
+   "understudy_after": 6,
+   "knowers_before": 31,
+   "knowers_after": 30,
+   "prs_before": 27,
+   "prs_after": 31,
+   "hours_before": 6.19,
+   "hours_after": 6.51,
+   "project_ratio": 1.5958,
+   "slowdown": 0.6599,
+   "reason": null
+  },
+  {
+   "person": "contributor-6b731",
+   "left_at": "2025-07-19",
+   "system": "pkg/kubelet",
+   "understudy_before": 6,
+   "understudy_after": 6,
+   "knowers_before": 94,
+   "knowers_after": 93,
+   "prs_before": 100,
+   "prs_after": 33,
+   "hours_before": 17.77,
+   "hours_after": 10.31,
+   "project_ratio": 1.5958,
+   "slowdown": 0.3633,
+   "reason": null
+  },
+  {
+   "person": "contributor-6b731",
+   "left_at": "2025-07-19",
+   "system": "cmd/kubelet/app",
+   "understudy_before": 5,
+   "understudy_after": 5,
+   "knowers_before": 22,
+   "knowers_after": 21,
+   "prs_before": 6,
+   "prs_after": 5,
+   "hours_before": 34.95,
+   "hours_after": 7.79,
+   "project_ratio": 1.5958,
+   "slowdown": 0.1397,
+   "reason": null
+  },
+  {
+   "person": "contributor-6b731",
+   "left_at": "2025-07-19",
+   "system": "pkg/controller",
+   "understudy_before": 4,
+   "understudy_after": 4,
+   "knowers_before": 46,
+   "knowers_after": 45,
+   "prs_before": 23,
+   "prs_after": 40,
+   "hours_before": 4.21,
+   "hours_after": 7.77,
+   "project_ratio": 1.5958,
+   "slowdown": 1.1562,
+   "reason": null
+  },
+  {
+   "person": "contributor-6b731",
+   "left_at": "2025-07-19",
+   "system": "pkg/apis/core/validation",
+   "understudy_before": 4,
+   "understudy_after": 4,
+   "knowers_before": 35,
+   "knowers_after": 34,
+   "prs_before": 19,
+   "prs_after": 5,
+   "hours_before": 5.25,
+   "hours_after": 8.71,
+   "project_ratio": 1.5958,
+   "slowdown": 1.0392,
+   "reason": null
+  },
+  {
+   "person": "contributor-6b731",
+   "left_at": "2025-07-19",
+   "system": "pkg/registry/core",
+   "understudy_before": 3,
+   "understudy_after": 3,
+   "knowers_before": 13,
+   "knowers_after": 12,
+   "prs_before": 4,
+   "prs_after": 12,
+   "hours_before": 17.69,
+   "hours_after": 17.32,
+   "project_ratio": 1.5958,
+   "slowdown": null,
+   "reason": "fewer than 5 PRs in a window"
+  },
+  {
+   "person": "contributor-6b731",
+   "left_at": "2025-07-19",
+   "system": "pkg/apis",
+   "understudy_before": 4,
+   "understudy_after": 4,
+   "knowers_before": 21,
+   "knowers_after": 20,
+   "prs_before": 22,
+   "prs_after": 21,
+   "hours_before": 10.59,
+   "hours_after": 5.56,
+   "project_ratio": 1.5958,
+   "slowdown": 0.3291,
+   "reason": null
+  },
+  {
+   "person": "contributor-6b731",
+   "left_at": "2025-07-19",
+   "system": "pkg/scheduler",
+   "understudy_before": 6,
+   "understudy_after": 6,
+   "knowers_before": 40,
+   "knowers_after": 39,
+   "prs_before": 31,
+   "prs_after": 44,
+   "hours_before": 4.18,
+   "hours_after": 4.78,
+   "project_ratio": 1.5958,
+   "slowdown": 0.7157,
+   "reason": null
+  },
+  {
+   "person": "contributor-6b731",
+   "left_at": "2025-07-19",
+   "system": "staging/src/k8s.io/api",
+   "understudy_before": 4,
+   "understudy_after": 4,
+   "knowers_before": 40,
+   "knowers_after": 39,
+   "prs_before": 22,
+   "prs_after": 25,
+   "hours_before": 7.92,
+   "hours_after": 9.11,
+   "project_ratio": 1.5958,
+   "slowdown": 0.7207,
+   "reason": null
+  },
+  {
+   "person": "contributor-6b731",
+   "left_at": "2025-07-19",
+   "system": "cmd/kubeadm",
+   "understudy_before": 5,
+   "understudy_after": 5,
+   "knowers_before": 28,
+   "knowers_after": 27,
+   "prs_before": 31,
+   "prs_after": 33,
+   "hours_before": 2.11,
+   "hours_after": 1.13,
+   "project_ratio": 1.5958,
+   "slowdown": 0.3341,
+   "reason": null
+  },
+  {
+   "person": "contributor-6b731",
+   "left_at": "2025-07-19",
+   "system": "staging/src/k8s.io/kubectl",
+   "understudy_before": 4,
+   "understudy_after": 4,
+   "knowers_before": 27,
+   "knowers_after": 26,
+   "prs_before": 30,
+   "prs_after": 26,
+   "hours_before": 4.78,
+   "hours_after": 12.66,
+   "project_ratio": 1.5958,
+   "slowdown": 1.6601,
+   "reason": null
+  },
+  {
+   "person": "contributor-c54b6",
+   "left_at": "2025-08-27",
+   "system": "staging/src/k8s.io/apiserver/pkg/features",
+   "understudy_before": 20,
+   "understudy_after": 20,
+   "knowers_before": 21,
+   "knowers_after": 21,
+   "prs_before": 13,
+   "prs_after": 4,
+   "hours_before": 10.69,
+   "hours_after": 74.39,
+   "project_ratio": 1.5596,
+   "slowdown": null,
+   "reason": "fewer than 5 PRs in a window"
+  },
+  {
+   "person": "contributor-c54b6",
+   "left_at": "2025-08-27",
+   "system": "pkg/controller",
+   "understudy_before": 4,
+   "understudy_after": 4,
+   "knowers_before": 46,
+   "knowers_after": 45,
+   "prs_before": 24,
+   "prs_after": 54,
+   "hours_before": 7.03,
+   "hours_after": 6.98,
+   "project_ratio": 1.5596,
+   "slowdown": 0.6362,
+   "reason": null
+  },
+  {
+   "person": "contributor-66445",
+   "left_at": "2025-08-28",
+   "system": "staging/src/k8s.io/component-base/metrics",
+   "understudy_before": 6,
+   "understudy_after": 5,
+   "knowers_before": 11,
+   "knowers_after": 10,
+   "prs_before": 10,
+   "prs_after": 3,
+   "hours_before": 28.54,
+   "hours_after": 6.98,
+   "project_ratio": 1.5923,
+   "slowdown": null,
+   "reason": "fewer than 5 PRs in a window"
+  },
+  {
+   "person": "contributor-66445",
+   "left_at": "2025-08-28",
+   "system": "staging/src/k8s.io/apiserver/pkg/storage",
+   "understudy_before": 2,
+   "understudy_after": 2,
+   "knowers_before": 24,
+   "knowers_after": 23,
+   "prs_before": 33,
+   "prs_after": 25,
+   "hours_before": 4.19,
+   "hours_after": 8.67,
+   "project_ratio": 1.5923,
+   "slowdown": 1.2995,
+   "reason": null
+  },
+  {
+   "person": "contributor-66445",
+   "left_at": "2025-08-28",
+   "system": "staging/src/k8s.io/apiserver/pkg/features",
+   "understudy_before": 19,
+   "understudy_after": 18,
+   "knowers_before": 20,
+   "knowers_after": 20,
+   "prs_before": 13,
+   "prs_after": 4,
+   "hours_before": 10.69,
+   "hours_after": 74.39,
+   "project_ratio": 1.5923,
+   "slowdown": null,
+   "reason": "fewer than 5 PRs in a window"
+  },
+  {
+   "person": "contributor-d9d3d",
+   "left_at": "2025-10-01",
+   "system": "pkg/controller/podautoscaler",
+   "understudy_before": 3,
+   "understudy_after": 3,
+   "knowers_before": 8,
+   "knowers_after": 7,
+   "prs_before": 8,
+   "prs_after": 4,
+   "hours_before": 2.34,
+   "hours_after": 2.04,
+   "project_ratio": 1.1458,
+   "slowdown": null,
+   "reason": "fewer than 5 PRs in a window"
+  },
+  {
+   "person": "contributor-a5b37",
+   "left_at": "2025-11-06",
+   "system": "staging/src/k8s.io/apiserver/pkg/features",
+   "understudy_before": 17,
+   "understudy_after": 17,
+   "knowers_before": 21,
+   "knowers_after": 21,
+   "prs_before": 5,
+   "prs_after": 5,
+   "hours_before": 18.36,
+   "hours_after": 20.71,
+   "project_ratio": 1.04,
+   "slowdown": 1.0846,
+   "reason": null
+  },
+  {
+   "person": "contributor-a5b37",
+   "left_at": "2025-11-06",
+   "system": "pkg/controller/podautoscaler",
+   "understudy_before": 3,
+   "understudy_after": 3,
+   "knowers_before": 7,
+   "knowers_after": 7,
+   "prs_before": 11,
+   "prs_after": 2,
+   "hours_before": 2.65,
+   "hours_after": 195.27,
+   "project_ratio": 1.04,
+   "slowdown": null,
+   "reason": "fewer than 5 PRs in a window"
+  },
+  {
+   "person": "contributor-a5b37",
+   "left_at": "2025-11-06",
+   "system": "staging/src/k8s.io/cloud-provider",
+   "understudy_before": 2,
+   "understudy_after": 2,
+   "knowers_before": 14,
+   "knowers_after": 14,
+   "prs_before": 4,
+   "prs_after": 10,
+   "hours_before": 6.7,
+   "hours_after": 12.62,
+   "project_ratio": 1.04,
+   "slowdown": null,
+   "reason": "fewer than 5 PRs in a window"
+  },
+  {
+   "person": "contributor-a5b37",
+   "left_at": "2025-11-06",
+   "system": "pkg/controller",
+   "understudy_before": 5,
+   "understudy_after": 5,
+   "knowers_before": 49,
+   "knowers_after": 49,
+   "prs_before": 44,
+   "prs_after": 31,
+   "hours_before": 5.56,
+   "hours_after": 13.1,
+   "project_ratio": 1.04,
+   "slowdown": 2.2657,
+   "reason": null
+  },
+  {
+   "person": "contributor-a5b37",
+   "left_at": "2025-11-06",
+   "system": "pkg/proxy/ipvs",
+   "understudy_before": 3,
+   "understudy_after": 3,
+   "knowers_before": 5,
+   "knowers_after": 5,
+   "prs_before": 2,
+   "prs_after": 5,
+   "hours_before": 18.67,
+   "hours_after": 14.3,
+   "project_ratio": 1.04,
+   "slowdown": null,
+   "reason": "fewer than 5 PRs in a window"
+  },
+  {
+   "person": "contributor-f7baa",
+   "left_at": "2026-03-26",
+   "system": "staging/src/k8s.io/kubelet",
+   "understudy_before": 5,
+   "understudy_after": 5,
+   "knowers_before": 16,
+   "knowers_after": 16,
+   "prs_before": 3,
+   "prs_after": 3,
+   "hours_before": 0.53,
+   "hours_after": 80.95,
+   "project_ratio": 0.9612,
+   "slowdown": null,
+   "reason": "fewer than 5 PRs in a window"
+  }
+ ]
+}

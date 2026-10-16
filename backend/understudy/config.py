@@ -7,6 +7,8 @@ ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(ROOT / ".env")
 
 RAW = ROOT / "data" / "raw"
+# The backtest's result (scripts/backtest.py), committed so /proof works without data/raw.
+PROOF = ROOT / "data" / "proof.json"
 
 
 def salt() -> str:
