@@ -26,13 +26,25 @@ RUN uv sync --frozen --no-dev
 COPY data/snapshot/ data/snapshot/
 COPY data/proof.json data/
 COPY --from=web /web/dist frontend/dist
-COPY docker/start.sh /app/start.sh
+COPY docker/ docker/
 
 ENV FALKORDB_HOST=127.0.0.1 \
     FALKORDB_PORT=6379 \
+    FALKORDB_DIR=/app/rdb \
     PORT=8000
+
+# Load the graphs now, on the build machine, and keep FalkorDB's saved file, so a
+# container starts by reading it instead of working out every number again.
+RUN mkdir -p "$FALKORDB_DIR" \
+    && redis-server --bind 127.0.0.1 --port "$FALKORDB_PORT" --dir "$FALKORDB_DIR" \
+       --dbfilename graphs.rdb --save "" --daemonize yes \
+       --loadmodule "$FALKORDB_BIN_PATH/falkordb.so" $FALKORDB_ARGS \
+    && until redis-cli -p "$FALKORDB_PORT" ping >/dev/null 2>&1; do sleep 0.2; done \
+    && .venv/bin/python docker/prebake.py \
+    && redis-cli -p "$FALKORDB_PORT" save \
+    && redis-cli -p "$FALKORDB_PORT" shutdown nosave
 EXPOSE 8000
 HEALTHCHECK --interval=10s --timeout=5s --start-period=60s \
     CMD python3 -c "import urllib.request, os; urllib.request.urlopen('http://127.0.0.1:%s/api/health' % os.environ['PORT'])"
 # Through sh, so it runs whether or not the checkout kept the executable bit.
-ENTRYPOINT ["sh", "/app/start.sh"]
+ENTRYPOINT ["sh", "/app/docker/start.sh"]

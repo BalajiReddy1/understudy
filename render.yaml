@@ -1,0 +1,13 @@
+# The live app on Render's free plan: New > Blueprint, pick this repo, and paste a Groq
+# key when asked (or leave it empty and the agent answers with the plain graph tools).
+# One web service runs FalkorDB and the app together; see the Dockerfile.
+services:
+  - type: web
+    name: understudy
+    runtime: docker
+    plan: free
+    region: singapore
+    healthCheckPath: /api/health
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
