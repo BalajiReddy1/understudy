@@ -112,6 +112,14 @@ def test_rehearse_and_memory(ctx):
         "auth": 2,
     }
     assert "3 of 5 systems would drop" in r.summary
+    # Whether anything hits 0 is said in words, so a model that says it is quoting.
+    assert r.summary.endswith(
+        "At 0, no approver can reach anyone who knows billing, ledger. "
+        "All other systems that drop keep at least one route."
+    )
+    esi = call(ctx, "rehearse_departure", {"people": [P["esi"]]})
+    assert esi.data["systems_changed"] and all(c["after"] for c in esi.data["changes"])
+    assert esi.summary.endswith("None of them drops to 0.")
     copies = [q for q in ctx.db.recorder.take() if q.cypher.startswith("GRAPH.COPY")]
     assert copies and copies[0].graph == "rehearsal:*"
 
@@ -156,6 +164,7 @@ def test_actions_need_a_session_and_stay_in_it(ctx, db):
     ctx.session = session
     r = call(ctx, "take_off_stage", {"people": [P["dev"]]})
     assert r.status == "ok" and "own copy" in r.summary
+    assert "At 0, no approver can reach anyone who knows billing, ledger." in r.summary
     assert ctx.graph == state["s"].graph  # reads now follow the visitor's copy
     assert call(ctx, "understudies", {"system": "billing"}).data["understudy"] == 0
     base = Context(db, GRAPH)

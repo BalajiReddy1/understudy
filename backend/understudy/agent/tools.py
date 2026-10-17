@@ -216,12 +216,31 @@ def understudies(ctx: Context, system: str | None = None, limit: int = 5) -> Res
     )
 
 
+def _at_zero(changes: list) -> str:
+    """Whether anything hits 0, the first thing to know about a departure, said in words
+    both ways. A model that repeats it is then quoting a tool; otherwise the answer check
+    has to reject "no approver" or "all other" even where they're true."""
+    if not changes:
+        return ""
+    zero = [c.system for c in changes if c.after == 0]
+    if not zero:
+        return " None of them drops to 0."
+    more = f" and {len(zero) - 3} more" if len(zero) > 3 else ""
+    text = f" At 0, no approver can reach anyone who knows {', '.join(zero[:3])}{more}."
+    if len(zero) < len(changes):
+        text += " All other systems that drop keep at least one route."
+    return text
+
+
 def _changes_text(people: list[str], changes: list, total: int, verb: str) -> str:
     who = ", ".join(people)
     if not changes:
         return f"If {who} {verb}, no system's number would drop: they carry no routes."
     worst = "; ".join(f"{c.system} {c.before} to {c.after}" for c in changes[:3])
-    return f"If {who} {verb}, {len(changes)} of {total} systems would drop. Worst: {worst}."
+    return (
+        f"If {who} {verb}, {len(changes)} of {total} systems would drop. Worst: {worst}."
+        + _at_zero(changes)
+    )
 
 
 def rehearse_departure(ctx: Context, people: list[str]) -> Result:
@@ -260,6 +279,7 @@ def take_off_stage(ctx: Context, people: list[str]) -> Result:
     if r.changes:
         worst = "; ".join(f"{c.system} {c.before} to {c.after}" for c in r.changes[:3])
         summary += f" {len(r.changes)} of {r.total_systems} systems dropped. Worst: {worst}."
+        summary += _at_zero(r.changes)
     else:
         summary += " No number dropped: they carried no routes."
     _remember(ctx, [c.system for c in r.changes], summary, "departure")

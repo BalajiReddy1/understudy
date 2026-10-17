@@ -186,7 +186,8 @@ def check(text: str, results: list[Result], question: str = "") -> str | None:
             return f"said '{word}', but no tool returned {n}"
     said = "\n".join(r.summary.lower() for r in results)
     for claim in ABSOLUTE.findall(text.lower()):
-        if claim not in said:
+        # "no approvers" is backed by a tool that said "no approver".
+        if claim not in said and claim.removesuffix("s") not in said:
             return f"claimed '{claim}', which no tool said"
     return None
 

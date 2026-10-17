@@ -191,6 +191,21 @@ def test_number_words_and_sweeping_claims_are_checked():
     )
     said_it = [Result("ok", "No approver has a line to anyone who knows it.", {"n": 0})]
     assert check("No approver has a line to anyone.", said_it) is None
+    # A rehearsal that takes a system to 0 says so in words, so the model may too,
+    # singular or plural. One that doesn't leaves the claim unbacked.
+    to_zero = [
+        Result(
+            "ok",
+            "If x left, 1 of 5 systems would drop. Worst: billing 1 to 0. "
+            "At 0, no approver can reach anyone who knows billing.",
+            {"before": 1, "after": 0},
+        )
+    ]
+    assert check("Billing would be left with no approvers who know it.", to_zero) is None
+    to_one = [Result("ok", "If x left, 1 of 5 systems would drop. Worst: auth 3 to 2.", {})]
+    assert check("Auth would have no approver left.", to_one) == (
+        "claimed 'no approver', which no tool said"
+    )
     assert "no remaining" in check("They have no remaining approvers.", rs)
 
 
