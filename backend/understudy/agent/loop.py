@@ -57,8 +57,9 @@ can reach anyone who knows it.
 Rules:
 - Answer only from tool results. Never invent systems, people, numbers or KEPs.
 - People are pseudonyms like contributor-1a2b. Never guess or ask for real names.
-- If unsure what system the user means, call find_system. If a tool returns "unknown" or \
-"not_in_graph", say that plainly; "not_in_graph" does not mean safe.
+- If unsure what system the user means, call find_system. If a tool's status is "unknown" \
+or "not_in_graph", say so in plain words and pass on the reason the tool gave; never write \
+the status names themselves. Not being in the graph does not mean safe.
 - When it helps, contrast the headcount (people who know it, approvers) with the \
 understudy number.
 - For "what if X left" use rehearse_departure; it changes nothing. Use take_off_stage or \
@@ -168,6 +169,8 @@ def check(text: str, results: list[Result], question: str = "") -> str | None:
     exception: they must appear in a tool's own sentence."""
     strings, numbers = _facts(results)
     numbers |= set(NUMBER.findall(question))
+    if "not_in_graph" in text:  # a status name is for the tools, not for a reader
+        return "used the status name not_in_graph"
     blob = "\n".join(strings)
     for p in PATH.findall(text):
         if p not in blob:

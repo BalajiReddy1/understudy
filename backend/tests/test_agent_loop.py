@@ -202,6 +202,12 @@ def test_number_words_and_sweeping_claims_are_checked():
         )
     ]
     assert check("Billing would be left with no approvers who know it.", to_zero) is None
+    # A status name is for the tools; an answer that repeats it gets the tool's sentence.
+    missing = [Result("not_in_graph", "None of the 79 modelled systems covers test/e2e/node.", {})]
+    assert check("test/e2e/node is not_in_graph, so there is no data.", missing) == (
+        "used the status name not_in_graph"
+    )
+    assert check("test/e2e/node isn't one of the modelled systems.", missing) is None
     to_one = [Result("ok", "If x left, 1 of 5 systems would drop. Worst: auth 3 to 2.", {})]
     assert check("Auth would have no approver left.", to_one) == (
         "claimed 'no approver', which no tool said"
