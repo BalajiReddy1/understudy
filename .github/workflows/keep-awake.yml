@@ -1,0 +1,19 @@
+name: Keep the live app awake
+
+# Render's free plan puts a service to sleep after 15 minutes without traffic, and
+# waking it takes about a minute. A request every 10 minutes keeps it up; GitHub can
+# start scheduled jobs a few minutes late, so the interval leaves room for that.
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping the health check
+        run: >-
+          curl --fail --silent --show-error --retry 3 --retry-delay 20 --max-time 120
+          https://understudy-u2qk.onrender.com/api/health

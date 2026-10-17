@@ -2,6 +2,8 @@
 
 Understudy measures how many people a team can lose before nobody who approves changes to a system can reach anyone who knows its code. It models Kubernetes as a graph in FalkorDB, computes that number for every part of the codebase with max-flow, lets you rehearse a departure on a copy of the graph, and includes an agent that answers questions only from graph queries and shows every query it ran.
 
+**Live app:** https://understudy-u2qk.onrender.com
+
 Built for Graph Hacks: Context for AI Agents (WeMakeDevs x FalkorDB), October 2026. Tracks: Company Brain, and Agents That Act on Connected Data.
 
 ![The Kubernetes workspace: the call board, the agent with its query trace open, and the stage for pkg/kubelet/apis/config](docs/kubernetes.png)
@@ -64,6 +66,8 @@ GROQ_API_KEY=your-key
 ```
 
 ## A two-minute tour
+
+On the [live app](https://understudy-u2qk.onrender.com) or a local copy:
 
 1. On the home page, the sample org has seven people. Select **dev** and press **Rehearse this departure**. Billing and ledger drop to 0; auth only drops to 2.
 2. Open **Kubernetes**. `pkg/kubelet/apis/config` is at the top of the call board: 9 people know it, 6 approve, understudy number 1.
@@ -280,7 +284,7 @@ uv run python scripts/backtest.py               # data/proof.json
 
 ### Deployment
 
-The repository includes a [render.yaml](render.yaml) blueprint for a single Docker web service on Render's free plan. The image is self-contained: FalkorDB listens only inside the container, the graph is baked into the image, and `GROQ_API_KEY` is the only setting. On a 0.1 CPU instance a cold start takes about 30 seconds and the container uses about 80 MB of memory.
+The repository includes a [render.yaml](render.yaml) blueprint for a single Docker web service on Render's free plan. The image is self-contained: FalkorDB listens only inside the container, the graph is baked into the image, and `GROQ_API_KEY` is the only setting. On a 0.1 CPU instance a cold start takes about 30 seconds and the container uses about 80 MB of memory. A scheduled GitHub Actions job ([keep-awake.yml](.github/workflows/keep-awake.yml)) requests the health check every 10 minutes so the free instance doesn't go to sleep.
 
 ## Project layout
 
