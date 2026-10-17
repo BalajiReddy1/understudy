@@ -90,6 +90,7 @@ def test_understudies_says_headcount_and_number(ctx):
     assert r.data["understudy"] == 1 and r.data["knowers"] == 3 and r.data["approvers"] == 1
     assert r.data["critical"] == [P["dev"]]
     assert "3 people know it and 1 can approve" in r.summary and "number is 1" in r.summary
+    assert r.summary.endswith(f"Losing {P['dev']} would lower it.")  # not "any one of" one
     board = call(ctx, "understudies", {"limit": 2})
     assert [s["name"] for s in board.data["systems"]] == ["billing", "ledger"]
 

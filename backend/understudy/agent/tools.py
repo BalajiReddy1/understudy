@@ -194,7 +194,8 @@ def understudies(ctx: Context, system: str | None = None, limit: int = 5) -> Res
     if n == 0:
         summary += " No approver has a line to anyone who knows it."
     elif critical:
-        summary += f" Losing any one of {', '.join(critical)} would lower it."
+        who = critical[0] if len(critical) == 1 else f"any one of {', '.join(critical)}"
+        summary += f" Losing {who} would lower it."
     if s["inactive_owners"]:
         summary += f" Everyone listed in {s['inactive_owners']} has gone quiet."
     return Result(
