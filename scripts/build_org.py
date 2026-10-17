@@ -2,6 +2,7 @@
 
 uv run python scripts/build_org.py                       # as of 2026-10-14
 uv run python scripts/build_org.py --as-of 2025-06-30 --graph org@2025-06
+uv run python scripts/build_org.py --snapshot             # also write data/snapshot
 """
 
 import argparse
@@ -9,7 +10,8 @@ import time
 from collections import Counter
 from datetime import date
 
-from understudy.config import RAW, salt
+from understudy import snapshot
+from understudy.config import RAW, SNAPSHOT, salt
 from understudy.db import connect, drop
 from understudy.derive.decisions import load_keps
 from understudy.derive.flow import build_flow_layer, write_org
@@ -21,11 +23,17 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--as-of", type=date.fromisoformat, default=date(2026, 10, 14))
     ap.add_argument("--graph", default="org")
+    ap.add_argument(
+        "--snapshot", action="store_true", help=f"also write the org to {SNAPSHOT.name}"
+    )
     args = ap.parse_args()
 
     t0 = time.perf_counter()
     prs, owners, aliases = load_prs(RAW), load_owners(RAW, args.as_of), load_aliases(RAW)
     org, _ = derive_org(prs, owners, aliases, args.as_of, salt(), load_keps(RAW))
+    if args.snapshot:
+        snapshot.save(org, SNAPSHOT)
+        print(f"wrote {SNAPSHOT.relative_to(SNAPSHOT.parents[2])}")
     t1 = time.perf_counter()
     print(
         f"derived from {len(prs)} PRs in {t1 - t0:.1f}s: {len(org['systems'])} systems, "

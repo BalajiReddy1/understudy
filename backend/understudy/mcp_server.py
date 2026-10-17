@@ -16,8 +16,10 @@ from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field
 
+from . import snapshot
 from .agent.tools import Context, call
 from .agent.trace import Recorder, TracedDB
+from .config import SNAPSHOT
 from .db import connect
 from .engine.sessions import Sessions
 
@@ -54,6 +56,9 @@ def _ctx() -> Context:
     if "ctx" not in _state:
         db = connect()
         base = os.environ.get("UNDERSTUDY_GRAPH", "org")
+        # A fresh clone has no graph yet: load it from the snapshot, as the app does.
+        if base not in db.list_graphs() and SNAPSHOT.is_file():
+            snapshot.load(db, base, SNAPSHOT)
         sessions = Sessions(lambda: db, base)
         holder: dict = {}
 

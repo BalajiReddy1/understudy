@@ -25,11 +25,12 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from redis.exceptions import ConnectionError as RedisConnectionError
 
+from . import snapshot as org_snapshot
 from .agent import memory
 from .agent.loop import Reply, ask, citations
 from .agent.tools import Context
 from .agent.trace import Recorder, TracedDB
-from .config import PROOF, ROOT
+from .config import PROOF, ROOT, SNAPSHOT
 from .db import connect
 from .derive.flow import build_flow_layer, write_org
 from .engine.fixes import FixRejected, UnknownSystem, apply_fix, checked_fix, propose
@@ -99,6 +100,7 @@ def create_app(
     sample: str = SAMPLE_GRAPH,
     static_dir: Path | None = DIST,
     proof: Path = PROOF,
+    snapshot: Path | None = None,
 ) -> FastAPI:
     graph = graph or os.environ.get("UNDERSTUDY_GRAPH", "org")
     # The client connects as soon as it's made, so it's made on first use: if FalkorDB
@@ -114,9 +116,20 @@ def create_app(
     sessions = Sessions(get_db, graph)
     limiter = AskLimiter(*ask_limit)
     sample_lock = threading.Lock()
+    load_lock = threading.Lock()
 
     def built() -> bool:
-        return graph in get_db().list_graphs()
+        """Whether the graph is there, loading it from the snapshot if it isn't: on a
+        fresh start, or after FalkorDB restarted with nothing in memory."""
+        if graph in get_db().list_graphs():
+            return True
+        if snapshot is None or not snapshot.is_file():
+            return False
+        with load_lock:
+            if graph not in get_db().list_graphs():
+                log.info("loading %s from %s", graph, snapshot.name)
+                org_snapshot.load(get_db(), graph, snapshot)
+        return True
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -126,6 +139,8 @@ def create_app(
                 if name.startswith(SCRATCH_PREFIXES):
                     get_db().select_graph(name).delete()
             sessions.drop_orphans()
+            built()  # load the snapshot now rather than on the first visitor's request
+            names = get_db().list_graphs()
             # A graph loaded without numbers (say, from a snapshot) gets them on start,
             # so the call board and the rehearsal shortcut always have CARRIES to read.
             if graph in names:
@@ -167,7 +182,9 @@ def create_app(
     def check_built() -> None:
         if not built():
             raise HTTPException(
-                503, f"The graph '{graph}' hasn't been built yet. Run scripts/build_org.py."
+                503,
+                f"The graph '{graph}' hasn't been built and there's no snapshot to load. "
+                "Run scripts/build_org.py.",
             )
 
     def sample_graph() -> str:
@@ -390,4 +407,4 @@ def create_app(
     return app
 
 
-app = create_app()
+app = create_app(snapshot=SNAPSHOT)
