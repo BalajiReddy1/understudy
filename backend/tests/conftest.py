@@ -1,6 +1,7 @@
 """Tests run against every FalkorDB listed in FALKORDB_TEST_PORTS (default 6379).
 To check both engines, start 4.22 next to the compose one:
 
+    docker compose up -d --wait falkordb
     docker run -d --rm --name understudy-fk4 -p 6391:6379 falkordb/falkordb:v4.22.0
     FALKORDB_TEST_PORTS=6379,6391 uv run pytest
 """

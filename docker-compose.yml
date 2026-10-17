@@ -1,5 +1,17 @@
 services:
+  # The whole app with FalkorDB inside it: `docker compose up --build`, then open
+  # http://localhost:8000. A Groq key in .env turns on the model; without one the
+  # agent still answers by running the obvious graph tools.
+  app:
+    build: .
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    environment:
+      GROQ_API_KEY: ${GROQ_API_KEY:-${groq_api_key:-}}
+
+  # FalkorDB on its own, for development and the tests: `docker compose up -d falkordb`.
   falkordb:
+    profiles: ["dev"]
     image: ${FALKORDB_IMAGE:-falkordb/falkordb:6.0.2}
     ports:
       - "${FALKORDB_PORT:-6379}:6379"
