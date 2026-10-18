@@ -1,3 +1,4 @@
+import { Footer } from './components/Footer'
 import { Header } from './components/Header'
 import { How } from './pages/How'
 import { Landing } from './pages/Landing'
@@ -12,15 +13,16 @@ export function App() {
   if (path === '/proof') return <Proof />
   if (path === '/how') return <How />
   return (
-    <div className="landing">
+    <div className="page">
       <Header />
-      <main className="not-found">
+      <main className="wrap not-found">
         <h1>Nothing on stage here</h1>
         <p>That page doesn’t exist.</p>
         <button type="button" className="button button-primary" onClick={() => navigate('/')}>
           Go to the start
         </button>
       </main>
+      <Footer />
     </div>
   )
 }

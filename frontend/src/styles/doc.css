@@ -1,36 +1,164 @@
-/* The reading pages: the green drench for the title, then a single column of plain
-   text on white, like a programme note. */
+/* The reading pages, Proof and How it works: a green title band with a real artifact
+   beside the title, then a contents rail and sections that pair text with evidence. */
 
-.doc-head {
-  padding: clamp(2rem, 1rem + 3vw, 4rem) var(--gutter) clamp(2rem, 1rem + 2.5vw, 3.5rem);
+.doc-hero {
+  padding: clamp(2.5rem, 1.5rem + 3vw, 4.5rem) 0 clamp(2.5rem, 1.5rem + 3vw, 4.5rem);
   background: var(--green);
 }
 
-.doc-head h1 {
-  max-width: 18ch;
+.doc-hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: clamp(2rem, 1rem + 4vw, 5rem);
+  align-items: center;
+}
+
+.doc-hero-grid.is-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.doc-hero h1 {
   font-family: var(--display);
   font-weight: 800;
   font-size: var(--step-4);
-  line-height: 0.92;
+  line-height: 0.9;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
 }
 
-.doc-answer {
-  max-width: 62ch;
+.doc-lead {
   margin-top: 1.25rem;
+  max-width: 58ch;
   font-size: var(--step-1);
   line-height: 1.5;
 }
 
-.doc-head .skeleton-numbers {
-  max-width: 36rem;
-  height: 5rem;
-  margin-top: 1.25rem;
+.doc-lead .skeleton-numbers {
+  height: 6rem;
   background: oklch(0.86 0.09 146);
 }
 
+/* A ruled sheet: label on the left, value on the right, like a call sheet. */
+.sheet {
+  padding: 1.5rem 1.6rem 1.25rem;
+  border-radius: var(--radius);
+  background: var(--page);
+  box-shadow: 0 1px 0 oklch(0.21 0.035 155 / 0.12), 0 6px 0 oklch(0.21 0.035 155 / 0.08);
+}
+
+.sheet-head {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: var(--step-2);
+  line-height: 1;
+}
+
+.sheet dl {
+  margin: 1rem 0 0;
+}
+
+.sheet dl > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.65rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.sheet dt {
+  font-size: var(--step--1);
+}
+
+.sheet dd {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: var(--step-2);
+  line-height: 1;
+  text-align: right;
+}
+
+.sheet dd span {
+  display: block;
+  margin-top: 0.25rem;
+  font-family: var(--mono);
+  font-weight: 400;
+  font-size: var(--step--2);
+  color: var(--ink-soft);
+}
+
+.sheet-note {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+  font-size: var(--step--2);
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+
+/* --- body: contents rail and sections ---------------------------------------------- */
+
+.doc-body {
+  display: grid;
+  grid-template-columns: 13.5rem minmax(0, 1fr);
+  gap: clamp(2rem, 1rem + 3vw, 4.5rem);
+  align-items: start;
+}
+
+.doc-rail {
+  position: sticky;
+  top: 1.5rem;
+  padding-top: clamp(2.5rem, 1.5rem + 2vw, 3.5rem);
+}
+
+.doc-rail-head {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: var(--step-1);
+}
+
+.doc-rail ol {
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+  border-left: 1px solid var(--line);
+}
+
+.doc-rail a {
+  display: block;
+  margin-left: -1px;
+  padding: 0.35rem 0 0.35rem 1rem;
+  border-left: 2px solid transparent;
+  color: var(--ink-soft);
+  font-size: var(--step--1);
+  line-height: 1.35;
+  text-decoration: none;
+  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+
+.doc-rail a:hover {
+  color: var(--ink);
+}
+
+.doc-rail a[aria-current='location'] {
+  border-left-color: var(--ink);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.doc-main {
+  min-width: 0;
+}
+
 .doc-section {
-  max-width: 50rem;
-  padding: clamp(2rem, 1.25rem + 2vw, 3rem) var(--gutter) 0;
+  padding-top: clamp(2.5rem, 1.5rem + 2vw, 3.5rem);
+  scroll-margin-top: 1rem;
+}
+
+.doc-section + .doc-section {
+  margin-top: clamp(0.5rem, 0.25rem + 1vw, 1.5rem);
+  border-top: 1px solid var(--line);
 }
 
 .doc-section h2 {
@@ -41,12 +169,16 @@
 }
 
 .doc-section > p {
-  max-width: 66ch;
+  max-width: 68ch;
   margin-top: 0.85rem;
 }
 
-.doc-section:last-child {
-  padding-bottom: clamp(2.5rem, 1.5rem + 3vw, 4rem);
+.doc-prose p + p {
+  margin-top: 0.9rem;
+}
+
+.doc-prose p {
+  max-width: 64ch;
 }
 
 .count {
@@ -56,49 +188,83 @@
   color: var(--ink-soft);
 }
 
-/* --- the four numbers ---------------------------------------------------------- */
-
-.doc-figures {
+/* Text on the left, the evidence for it on the right. */
+.doc-pair {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1.5rem;
-  max-width: 62rem;
-  padding: clamp(1.5rem, 1rem + 2vw, 2.5rem) var(--gutter) 0;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: clamp(1.5rem, 1rem + 2.5vw, 3.5rem);
+  align-items: start;
+  margin-top: 1rem;
 }
 
-.doc-figures > div {
-  padding-top: 0.75rem;
-  border-top: 2px solid var(--ink);
+.doc-card {
+  margin: 0;
+  padding: 1.25rem 1.4rem;
+  overflow-x: auto;
+  border-radius: var(--radius);
+  background: var(--green-wash);
+  font-size: var(--step--1);
+  line-height: 1.65;
 }
 
-.doc-figures .figure {
+.doc-facts {
+  margin: 0;
+}
+
+.doc-facts > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.7rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.doc-facts > div:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+.doc-facts dd {
+  margin: 0;
   font-family: var(--display);
   font-weight: 800;
-  font-size: var(--step-3);
+  font-size: var(--step-2);
   line-height: 1;
 }
 
-.doc-figures .figure span {
-  font-size: 0.5em;
-  color: var(--ink-soft);
-}
-
-.doc-figures p + p {
-  margin-top: 0.35rem;
-  font-size: var(--step--1);
-  line-height: 1.4;
-}
-
-/* --- lists and definitions ----------------------------------------------------- */
+/* --- lists and definitions ---------------------------------------------------------- */
 
 .doc-list {
-  max-width: 66ch;
-  margin: 1rem 0 0;
+  margin: 1.25rem 0 0;
   padding-left: 1.25rem;
 }
 
 .doc-list > li + li {
-  margin-top: 0.85rem;
+  margin-top: 0.9rem;
+}
+
+.doc-list.is-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem 3rem;
+  padding: 0;
+  list-style: none;
+  counter-reset: item;
+}
+
+.doc-list.is-columns > li {
+  margin: 0;
+  padding-top: 0.9rem;
+  border-top: 2px solid var(--ink);
+}
+
+.doc-list.is-columns > li > strong {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: var(--step-1);
+  line-height: 1.1;
 }
 
 .doc-list ul {
@@ -107,7 +273,6 @@
 }
 
 .doc-defs {
-  max-width: 66ch;
   margin: 1rem 0 0;
 }
 
@@ -124,24 +289,122 @@
   margin: 0.2rem 0 0;
 }
 
+/* A definition list laid out as a two-column ruled table. */
+.doc-defs.is-table {
+  display: grid;
+  grid-template-columns: 14rem minmax(0, 1fr);
+  margin-top: 1.25rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.doc-defs.is-table dt,
+.doc-defs.is-table dd {
+  margin: 0;
+  padding: 1rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.doc-defs.is-table dt {
+  padding-right: 2rem;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: var(--step-1);
+  line-height: 1.2;
+}
+
+.doc-defs.is-table dd {
+  max-width: 70ch;
+}
+
 .doc-model {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem 2.5rem;
-  margin-top: 1rem;
+  gap: 1rem 3.5rem;
+  margin-top: 1.25rem;
 }
 
 .doc-model .doc-defs {
   margin: 0;
 }
 
-.doc-findings dt {
-  font-family: var(--text);
+/* --- queries ------------------------------------------------------------------------ */
+
+.doc-queries {
+  display: grid;
+  margin-top: 1.25rem;
 }
 
+.doc-query {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.4fr);
+  gap: 1.25rem 2.5rem;
+  align-items: start;
+  padding: 1.5rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.doc-query h3 {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: var(--step-1);
+  line-height: 1.15;
+}
+
+.doc-query-meta p:first-of-type {
+  margin-top: 0.4rem;
+}
+
+.doc-query-meta .fine {
+  margin-top: 0.6rem;
+}
+
+.doc-query pre {
+  margin: 0;
+  padding: 1rem 1.1rem;
+  overflow-x: auto;
+  border-radius: var(--radius-sm);
+  background: var(--ink);
+  color: oklch(0.92 0.04 146);
+  font-size: var(--step--1);
+  line-height: 1.55;
+}
+
+/* --- the agent's tools ------------------------------------------------------------- */
+
+.doc-tools {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.doc-tools li {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.doc-tools li:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+.doc-tools code {
+  font-weight: 700;
+  font-size: var(--step--1);
+}
+
+.doc-tools span {
+  font-size: var(--step--1);
+  color: var(--ink-soft);
+}
+
+/* --- how the pieces fit: a real left-to-right sequence ------------------------------- */
+
 .doc-pipeline {
-  max-width: 66ch;
-  margin: 1rem 0 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0;
+  margin: 1.5rem 0 1.25rem;
   padding: 0;
   list-style: none;
   counter-reset: step;
@@ -149,71 +412,64 @@
 
 .doc-pipeline li {
   position: relative;
-  padding: 0.75rem 0 0.75rem 2.75rem;
-  border-left: 2px solid var(--green);
-  margin-left: 0.9rem;
+  display: grid;
+  align-content: start;
+  gap: 0.4rem;
+  padding: 1rem 1.25rem 1rem 0;
+  border-top: 2px solid var(--ink);
   counter-increment: step;
 }
 
 .doc-pipeline li::before {
   content: counter(step);
   position: absolute;
-  left: -0.95rem;
-  top: 0.7rem;
+  top: -0.85rem;
+  left: 0;
   display: grid;
   place-items: center;
-  width: 1.8rem;
-  height: 1.8rem;
+  width: 1.6rem;
+  height: 1.6rem;
   border-radius: 50%;
   background: var(--ink);
-  color: var(--page);
+  color: var(--green);
   font-family: var(--mono);
   font-size: var(--step--2);
 }
 
-/* --- queries ------------------------------------------------------------------- */
-
-.doc-queries {
-  display: grid;
-  /* minmax(0, ...) so a long Cypher line scrolls inside its block, not the page. */
-  grid-template-columns: minmax(0, 1fr);
-  gap: 1.75rem;
-  margin-top: 1.25rem;
-}
-
-.doc-query h3 {
+.doc-pipeline strong {
+  margin-top: 0.6rem;
+  font-family: var(--display);
+  font-weight: 800;
   font-size: var(--step-1);
 }
 
-.doc-query > p:first-of-type {
-  margin-top: 0.3rem;
-  max-width: 66ch;
-}
-
-.doc-query pre {
-  margin: 0.6rem 0 0.3rem;
-  padding: 0.9rem 1rem;
-  overflow-x: auto;
-  border-radius: var(--radius-sm);
-  background: var(--green-wash);
+.doc-pipeline span {
   font-size: var(--step--1);
-  line-height: 1.5;
 }
 
-/* --- the flow diagram on /how --------------------------------------------------- */
+/* --- the flow diagram beside the How title ----------------------------------------- */
 
 .flow-diagram {
-  margin: 1.25rem 0 0.5rem;
-  max-width: 46rem;
-  overflow-x: auto;
+  margin: 0;
+  padding: 1.5rem 1.5rem 1.25rem;
+  border-radius: var(--radius);
+  background: var(--page);
+  box-shadow: 0 1px 0 oklch(0.21 0.035 155 / 0.12), 0 6px 0 oklch(0.21 0.035 155 / 0.08);
 }
 
 .flow-diagram svg {
   display: block;
-  min-width: 34rem;
   width: 100%;
+  max-width: 19rem;
   height: auto;
+  margin-inline: auto;
   font-family: var(--mono);
+}
+
+.flow-diagram figcaption {
+  margin-top: 1rem;
+  font-size: var(--step--1);
+  color: var(--ink-soft);
 }
 
 .flow-node rect {
@@ -227,46 +483,42 @@
 }
 
 .flow-node.is-gate rect {
+  fill: var(--green-wash);
   stroke: var(--green-ink);
   stroke-width: 2.5;
 }
 
 .flow-node text {
-  font-size: 13px;
+  font-size: 15px;
   fill: var(--ink);
 }
 
 .flow-node .flow-sub {
-  font-size: 11px;
+  font-size: 11.5px;
   fill: var(--ink-soft);
 }
 
 .flow-edge line {
   stroke: var(--green-ink);
-  stroke-width: 2;
+  stroke-width: 2.5;
 }
 
 .flow-edge path {
   fill: var(--green-ink);
 }
 
-.flow-edge text,
-.flow-note {
-  font-size: 11px;
+.flow-edge text {
+  font-size: 12px;
   fill: var(--ink-soft);
 }
 
-/* --- the proof chart ------------------------------------------------------------ */
+/* --- the proof chart ---------------------------------------------------------------- */
 
 .proof-chart {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1.5rem;
+  gap: 2rem;
   margin-top: 1.5rem;
-}
-
-.doc-section:has(.proof-chart) {
-  max-width: 62rem;
 }
 
 .proof-panel {
@@ -397,7 +649,7 @@
   overflow-wrap: anywhere;
 }
 
-/* --- the table ------------------------------------------------------------------- */
+/* --- tables --------------------------------------------------------------------------- */
 
 .doc-table-wrap {
   margin-top: 1rem;
@@ -409,7 +661,7 @@
 }
 
 .doc-table-scroll {
-  margin-top: 0.75rem;
+  margin-top: 1rem;
   overflow-x: auto;
 }
 
@@ -421,15 +673,16 @@
 
 .doc-table th,
 .doc-table td {
-  padding: 0.4rem 0.6rem 0.4rem 0;
+  padding: 0.6rem 1rem 0.6rem 0;
   border-bottom: 1px solid var(--line);
   text-align: left;
   vertical-align: top;
 }
 
 .doc-table th {
-  font-weight: 600;
+  font-weight: 700;
   white-space: nowrap;
+  border-bottom: 2px solid var(--ink);
 }
 
 .doc-table .mono {
@@ -449,17 +702,52 @@
   color: var(--ink-soft);
 }
 
+.doc-findings td:first-child {
+  width: 46%;
+}
+
+.doc-findings strong {
+  display: block;
+  margin-bottom: 0.2rem;
+}
+
 .doc-links {
   margin-top: 1rem;
   font-size: var(--step--1);
 }
 
-@media (max-width: 860px) {
-  .doc-figures {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+/* --- smaller screens ------------------------------------------------------------- */
+
+@media (max-width: 1080px) {
+  .doc-body {
+    grid-template-columns: minmax(0, 1fr);
   }
+  .doc-rail {
+    display: none;
+  }
+  .doc-pipeline {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.5rem 2rem;
+  }
+}
+
+@media (max-width: 860px) {
+  .doc-hero-grid,
+  .doc-pair,
+  .doc-model,
+  .doc-query,
   .proof-chart,
-  .doc-model {
-    grid-template-columns: 1fr;
+  .doc-list.is-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .doc-defs.is-table {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .doc-defs.is-table dd {
+    padding-top: 0;
+    border-top: 0;
+  }
+  .doc-pipeline {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

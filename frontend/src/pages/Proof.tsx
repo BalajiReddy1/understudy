@@ -1,11 +1,19 @@
 import { useEffect, useState } from 'react'
 import { type Proof as ProofData, api } from '../api'
-import { Header } from '../components/Header'
+import { type DocSection, DocPage } from '../components/DocPage'
 import { ProofChart } from '../components/ProofChart'
 import { plural } from '../lib/format'
 import { facts, month, pace, range, signed, verdict } from '../lib/proof'
 
 const CODE = 'https://github.com/BalajiReddy1/understudy/blob/main/backend/understudy/backtest.py'
+
+const SECTIONS: DocSection[] = [
+  { id: 'chart', title: 'What happened' },
+  { id: 'wrong', title: 'What didn’t work' },
+  { id: 'settle', title: 'What would settle it' },
+  { id: 'method', title: 'How it was measured' },
+  { id: 'every', title: 'Every system' },
+]
 
 export function Proof() {
   const [data, setData] = useState<ProofData | null>(null)
@@ -19,29 +27,67 @@ export function Proof() {
   }, [])
 
   return (
-    <div className="doc-page">
-      <Header />
-      <main className="doc">
-        <header className="doc-head">
-          <h1>Does the number mean anything?</h1>
-          {data ? (
-            <Answer data={data} />
-          ) : error ? (
-            <p className="panel-error" role="alert">
-              {error}
-            </p>
-          ) : (
-            <div className="skeleton skeleton-numbers" aria-busy="true" aria-label="Loading the backtest" />
-          )}
-        </header>
-        {data && <Body data={data} />}
-      </main>
-      <footer className="site-foot">
-        <p>
-          People appear as pseudonyms. A departure here means someone stepped back from an OWNERS file,
-          which is a normal part of open source, not something anyone did wrong.
-        </p>
-      </footer>
+    <DocPage
+      title="Does the number mean anything?"
+      lead={
+        data ? (
+          <Answer data={data} />
+        ) : error ? (
+          <p className="panel-error" role="alert">
+            {error}
+          </p>
+        ) : (
+          <div className="skeleton skeleton-numbers" aria-busy="true" aria-label="Loading the backtest" />
+        )
+      }
+      aside={data ? <Results data={data} /> : undefined}
+      // Sections exist only once the data is in, and the contents rail follows them.
+      sections={data ? SECTIONS : []}
+    >
+      {data && <Body data={data} />}
+    </DocPage>
+  )
+}
+
+/** The result as a ruled sheet beside the title. */
+function Results({ data }: { data: ProofData }) {
+  const s = data.summary
+  const f = facts(data)
+  return (
+    <div className="sheet">
+      <p className="sheet-head">The result</p>
+      <dl>
+        <div>
+          <dt>Departures in the OWNERS history</dt>
+          <dd>{f.departures}</dd>
+        </div>
+        <div>
+          <dt>Departures that could be measured</dt>
+          <dd>{f.measured}</dd>
+        </div>
+        <div>
+          <dt>Systems they knew or approved</dt>
+          <dd>{s.systems}</dd>
+        </div>
+        <div>
+          <dt>ρ, understudy number</dt>
+          <dd>
+            {signed(s.rho.understudy.value)}
+            <span>{range(s.rho.understudy)}</span>
+          </dd>
+        </div>
+        <div>
+          <dt>ρ, plain headcount</dt>
+          <dd>
+            {signed(s.rho.knowers.value)}
+            <span>{range(s.rho.knowers)}</span>
+          </dd>
+        </div>
+      </dl>
+      <p className="sheet-note">
+        95% intervals from resampling whole departures. A departure means someone stepped back from an
+        OWNERS file, a normal part of open source.
+      </p>
     </div>
   )
 }
@@ -93,37 +139,7 @@ function Body({ data }: { data: ProofData }) {
 
   return (
     <>
-      <section className="doc-figures" aria-label="The result in four numbers">
-        <div>
-          <p className="figure">
-            {f.measured}
-            <span> of {f.departures}</span>
-          </p>
-          <p>departures could be measured</p>
-        </div>
-        <div>
-          <p className="figure">{s.systems}</p>
-          <p>systems they knew or approved, with enough PRs</p>
-        </div>
-        <div>
-          <p className="figure">{signed(s.rho.understudy.value)}</p>
-          <p>
-            ρ for the understudy number
-            <br />
-            <span className="fine">95%: {range(s.rho.understudy)}</span>
-          </p>
-        </div>
-        <div>
-          <p className="figure">{signed(s.rho.knowers.value)}</p>
-          <p>
-            ρ for a plain headcount
-            <br />
-            <span className="fine">95%: {range(s.rho.knowers)}</span>
-          </p>
-        </div>
-      </section>
-
-      <section className="doc-section" aria-labelledby="chart-title">
+      <section className="doc-section" id="chart" aria-labelledby="chart-title">
         <h2 id="chart-title">What happened after each departure</h2>
         <p>
           Each dot is one system the person knew or approved. Up means the first response to a PR got
@@ -134,9 +150,9 @@ function Body({ data }: { data: ProofData }) {
         <ProofChart units={used} rho={s.rho} />
       </section>
 
-      <section className="doc-section" aria-labelledby="wrong-title">
+      <section className="doc-section" id="wrong" aria-labelledby="wrong-title">
         <h2 id="wrong-title">What didn’t work</h2>
-        <ol className="doc-list">
+        <ol className="doc-list is-columns">
           {noLow && (
             <li>
               <strong>No departure hit a fragile system.</strong> Of the {f.systems.touched} systems these
@@ -186,7 +202,7 @@ function Body({ data }: { data: ProofData }) {
         </ol>
       </section>
 
-      <section className="doc-section" aria-labelledby="settle-title">
+      <section className="doc-section" id="settle" aria-labelledby="settle-title">
         <h2 id="settle-title">What would settle it</h2>
         <p>
           More departures, and especially ones from systems sitting at 1. Kubernetes history goes back to
@@ -195,10 +211,10 @@ function Body({ data }: { data: ProofData }) {
         </p>
       </section>
 
-      <section className="doc-section" aria-labelledby="method-title">
+      <section className="doc-section" id="method" aria-labelledby="method-title">
         <h2 id="method-title">How it was measured</h2>
         <p>The method was written down before the first run and hasn’t changed since.</p>
-        <dl className="doc-defs">
+        <dl className="doc-defs is-table">
           <dt>Departures</dt>
           <dd>
             Someone moved to emeritus in an OWNERS file, or dropped from every alias for good. They count
@@ -234,7 +250,7 @@ function Body({ data }: { data: ProofData }) {
         </dl>
       </section>
 
-      <section className="doc-section" aria-labelledby="table-title">
+      <section className="doc-section" id="every" aria-labelledby="table-title">
         <h2 id="table-title">Every system</h2>
         <details className="doc-table-wrap">
           <summary>Show all {plural(data.units.length, 'row')}</summary>

@@ -26,6 +26,8 @@
   --step-4: clamp(3.75rem, 2rem + 6.5vw, 6rem);
 
   --gutter: clamp(1rem, 0.6rem + 2vw, 2.5rem);
+  /* Every page except the workspace sits in one centred column this wide. */
+  --container: 1280px;
   --radius: 12px;
   --radius-sm: 8px;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);

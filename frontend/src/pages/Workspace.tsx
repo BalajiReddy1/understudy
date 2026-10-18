@@ -105,7 +105,7 @@ export function Workspace({ params }: { params: URLSearchParams }) {
 
   return (
     <div className="workspace">
-      <Header session={session} onReset={reset} onLeaveCopy={() => (setSession(null), changed())} />
+      <Header wide session={session} onReset={reset} onLeaveCopy={() => (setSession(null), changed())} />
       <nav className="ws-tabs" aria-label="Panels">
         {(['ask', 'board', 'stage'] as Tab[]).map((t) => (
           <button

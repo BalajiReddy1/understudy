@@ -1,52 +1,97 @@
-/* The landing page: the green drench from the design doc, with the live demo on white. */
+/* The landing page: the green drench with the live sample org, then the Kubernetes
+   headline from the real board, then the way in to the agent. */
 
 .hero {
-  display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-  gap: clamp(2rem, 1rem + 3vw, 4rem);
-  align-items: start;
-  padding: clamp(2rem, 1rem + 3vw, 4.5rem) var(--gutter) clamp(2.5rem, 1.5rem + 3vw, 5rem);
+  padding: clamp(2.5rem, 1.5rem + 3vw, 5rem) 0 clamp(3rem, 2rem + 3vw, 5.5rem);
   background: var(--green);
 }
 
-.hero-text {
-  max-width: 34rem;
+.hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  gap: clamp(2rem, 1rem + 4vw, 5.5rem);
+  align-items: start;
 }
 
 .hero h1 {
   font-family: var(--display);
   font-weight: 800;
   font-size: var(--step-4);
-  line-height: 0.9;
+  line-height: 0.88;
   letter-spacing: -0.01em;
 }
 
 .hero-sub {
-  margin-top: 0.6rem;
+  margin-top: 0.7rem;
   font-size: var(--step-1);
 }
 
 .hero-question {
-  margin-top: 2rem;
-  font-weight: 600;
+  margin-top: clamp(1.5rem, 1rem + 1.5vw, 2.5rem);
+  max-width: 22ch;
+  font-weight: 650;
   font-size: var(--step-2);
-  line-height: 1.2;
+  line-height: 1.18;
+  text-wrap: balance;
 }
 
 .hero-body {
   margin-top: 1rem;
-  max-width: 60ch;
+  max-width: 54ch;
 }
 
 .hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
   margin-top: 1.75rem;
+}
+
+.button-ghost {
+  background: transparent;
+}
+
+.button-ghost:hover:not(:disabled) {
+  background: oklch(0.21 0.035 155 / 0.08);
+}
+
+.hero-meta {
+  display: grid;
+  margin: clamp(2rem, 1.5rem + 1.5vw, 3rem) 0 0;
+  max-width: 34rem;
+}
+
+.hero-meta > div {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr);
+  gap: 1rem;
+  padding: 0.8rem 0;
+  border-top: 1px solid oklch(0.21 0.035 155 / 0.22);
+}
+
+.hero-meta dt {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: var(--step-0);
+  line-height: 1.5;
+}
+
+.hero-meta dd {
+  margin: 0;
+  font-size: var(--step--1);
+  line-height: 1.5;
+}
+
+.hero-meta code {
+  font-size: 0.95em;
 }
 
 .hero-demo {
   min-width: 0;
-  padding: 1.25rem 1.25rem 0.5rem;
+  padding: 1.35rem 1.35rem 0.6rem;
   border-radius: var(--radius);
   background: var(--page);
+  box-shadow: 0 1px 0 oklch(0.21 0.035 155 / 0.12), 0 6px 0 oklch(0.21 0.035 155 / 0.08);
 }
 
 .hero-demo .stage-panel {
@@ -54,7 +99,7 @@
 }
 
 .demo-label {
-  font-weight: 600;
+  font-weight: 650;
 }
 
 .demo-systems {
@@ -93,9 +138,69 @@
   background: var(--green-wash);
 }
 
+/* --- the Kubernetes headline ---------------------------------------------------- */
+
+.headline {
+  padding: clamp(3rem, 2rem + 4vw, 6rem) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.headline-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+  gap: clamp(2rem, 1rem + 4vw, 5rem);
+  align-items: end;
+}
+
+.headline-path {
+  font-family: var(--mono);
+  font-size: var(--step--1);
+  color: var(--ink-soft);
+}
+
+.headline-path strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.headline-line {
+  margin-top: 1rem;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(2.25rem, 1.2rem + 3.6vw, 4.6rem);
+  line-height: 1.02;
+  letter-spacing: -0.005em;
+  text-wrap: balance;
+}
+
+.headline-n {
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.headline-n.is-alarm {
+  color: var(--alarm);
+}
+
+.headline-aside p {
+  max-width: 46ch;
+}
+
+.headline-aside .button {
+  margin-top: 1.25rem;
+}
+
+/* --- ask about Kubernetes ---------------------------------------------------- */
+
 .ask-k8s {
-  max-width: 52rem;
-  padding: clamp(2.5rem, 1.5rem + 3vw, 4.5rem) var(--gutter);
+  padding: clamp(3rem, 2rem + 3vw, 5rem) 0 0;
+}
+
+.ask-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: clamp(2rem, 1rem + 4vw, 5rem);
+  align-items: start;
 }
 
 .ask-k8s h2 {
@@ -105,25 +210,25 @@
   line-height: 1;
 }
 
-.ask-k8s > p {
-  margin-top: 0.85rem;
-  max-width: 62ch;
+.ask-k8s h2 + p {
+  margin-top: 0.9rem;
+  max-width: 50ch;
 }
 
 .ask-form {
   display: flex;
   gap: 0.5rem;
-  margin: 1.5rem 0 1rem;
 }
 
 .ask-form input {
   flex: 1;
   min-width: 0;
-  min-height: 3rem;
-  padding: 0.6rem 0.85rem;
+  min-height: 3.25rem;
+  padding: 0.6rem 1rem;
   border: 1.5px solid var(--ink);
   border-radius: var(--radius-sm);
   background: var(--page);
+  font-size: var(--step-0);
 }
 
 .ask-form input::placeholder {
@@ -137,22 +242,20 @@
 }
 
 .ask-form .button {
-  min-height: 3rem;
+  min-height: 3.25rem;
+  padding-inline: 1.5rem;
 }
 
-.site-foot {
-  padding: 1.5rem var(--gutter) 2.5rem;
-  border-top: 1px solid var(--line);
-  font-size: var(--step--1);
-  color: var(--ink-soft);
-}
-
-.site-foot p {
-  max-width: 70ch;
+.ask-suggestions {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
 }
 
 .not-found {
-  padding: 4rem var(--gutter);
+  padding: 4rem 0;
   display: grid;
   gap: 1rem;
   justify-items: start;
@@ -165,7 +268,9 @@
 }
 
 @media (max-width: 980px) {
-  .hero {
+  .hero-grid,
+  .headline-grid,
+  .ask-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -173,9 +278,5 @@
 @media (max-width: 520px) {
   .ask-form {
     flex-direction: column;
-  }
-  .copy-status {
-    margin-left: 0;
-    flex-wrap: wrap;
   }
 }
