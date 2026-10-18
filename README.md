@@ -2,7 +2,7 @@
 
 Understudy measures how many people a team can lose before nobody who approves changes to a system can reach anyone who knows its code. It models Kubernetes as a graph in FalkorDB, computes that number for every part of the codebase with max-flow, lets you rehearse a departure on a copy of the graph, and includes an agent that answers questions only from graph queries and shows every query it ran.
 
-**Live app:** https://understudy-u2qk.onrender.com
+**Live app:** https://understudy-u2qk.onrender.com · **Demo video:** https://youtu.be/4ToHoa0cIWE · **Blog post:** https://dev.to/balajireddy1/nine-people-know-this-part-of-kubernetes-it-still-depends-on-one-4a5b
 
 Built for Graph Hacks: Context for AI Agents (WeMakeDevs x FalkorDB), October 2026. Tracks: Company Brain, and Agents That Act on Connected Data.
 
