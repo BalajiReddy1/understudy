@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react'
 
-// Two pages don't need a router library: the path and query string live in the URL,
+// A few pages don't need a router library: the path and query string live in the URL,
 // navigate() pushes history, and back/forward re-render.
 
 export function navigate(to: string, replace = false): void {
+  const from = location.pathname
   if (replace) history.replaceState(null, '', to)
   else history.pushState(null, '', to)
   window.dispatchEvent(new PopStateEvent('popstate'))
+  // A new page starts at the top, as it would after a full load. Changing only the
+  // query (picking a system) keeps the reader where they are.
+  if (!replace && location.pathname !== from) window.scrollTo(0, 0)
 }
 
 export function useLocation(): { path: string; params: URLSearchParams } {
